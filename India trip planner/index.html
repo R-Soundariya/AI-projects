@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safar Saathi — India Trip Planner</title>
+<style>
+  :root {
+    --teal-800: #115e59;
+    --teal-600: #0d9488;
+    --teal-100: #ccfbf1;
+    --teal-50: #f0fdfa;
+    --saffron: #f59e0b;
+    --saffron-100: #fef3c7;
+    --saffron-800: #92400e;
+    --red-100: #fee2e2;
+    --red-800: #991b1b;
+    --ink: #16302c;
+    --muted: #55716b;
+    --border: #e0ece9;
+    --card-shadow: 0 1px 3px rgba(17, 94, 89, 0.08), 0 4px 14px rgba(17, 94, 89, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #fff; color: var(--ink); line-height: 1.55; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+  header.hero { padding: 56px 0 40px; text-align: center; background: linear-gradient(180deg, var(--teal-50) 0%, #fff 100%); }
+  .hero .logo { font-size: 44px; }
+  .hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
+  .hero h1 em { font-style: normal; color: var(--teal-800); }
+  .hero p.tag { max-width: 580px; margin: 14px auto 0; color: var(--muted); font-size: 17px; }
+  .hero .cta { margin-top: 26px; }
+
+  button { font: inherit; cursor: pointer; border: none; }
+  .btn-primary { background: var(--teal-800); color: #fff; font-weight: 700; padding: 14px 28px; border-radius: 12px; font-size: 17px; min-height: 48px; box-shadow: 0 2px 8px rgba(17,94,89,.25); transition: background .15s, transform .1s; }
+  .btn-primary:hover { background: var(--teal-600); }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-ghost { background: #fff; color: var(--teal-800); font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 1.5px solid var(--teal-800); min-height: 44px; }
+  .btn-ghost:hover { background: var(--teal-50); }
+
+  section { padding: 36px 0; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--card-shadow); padding: 26px 22px; }
+  .card h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .card p.sub { color: var(--muted); font-size: 14.5px; margin-bottom: 20px; }
+  .field { margin-bottom: 22px; }
+  .field > label { display: block; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  input[type="text"], input[type="number"] { padding: 12px 14px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 12px; outline: none; }
+  input:focus { border-color: var(--teal-600); box-shadow: 0 0 0 3px var(--teal-100); }
+  #city-input, #from-input { width: 100%; max-width: 420px; }
+  #budget-input { width: 180px; }
+
+  .stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .stepper button { width: 48px; height: 48px; background: var(--teal-50); color: var(--teal-800); font-size: 22px; font-weight: 700; }
+  .stepper button:hover { background: var(--teal-100); }
+  .stepper .val { width: 64px; text-align: center; font-size: 20px; font-weight: 800; }
+
+  .style-chips, .city-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .style-chips button, .city-chips button { background: #fff; border: 1.5px solid var(--border); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 14.5px; font-weight: 600; min-height: 44px; }
+  .style-chips button.on { background: var(--teal-800); border-color: var(--teal-800); color: #fff; }
+  .city-chips button { border-style: dashed; border-color: var(--teal-600); color: var(--teal-800); }
+  .city-chips button:hover, .style-chips button:hover:not(.on) { background: var(--teal-50); }
+
+  .notice { background: var(--saffron-100); color: var(--saffron-800); border-radius: 10px; padding: 12px 14px; font-size: 14px; margin: 14px 0; }
+  .notice.err { background: var(--red-100); color: var(--red-800); }
+
+  /* results */
+  #results { display: none; }
+  .trip-head { text-align: center; margin-bottom: 26px; }
+  .trip-head h2 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; }
+  .trip-head p { color: var(--muted); }
+  .banner { border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; font-size: 15.5px; }
+  .banner.ok { background: var(--teal-100); color: var(--teal-800); }
+  .banner.over { background: var(--red-100); color: var(--red-800); }
+  .banner strong { font-size: 21px; display: block; margin-bottom: 2px; }
+
+  .day-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--card-shadow); padding: 22px; margin-bottom: 18px; }
+  .day-card h3 { font-size: 18px; font-weight: 800; color: var(--teal-800); margin-bottom: 14px; }
+  .day-card h3 .dnum { background: var(--teal-800); color: #fff; border-radius: 8px; padding: 2px 10px; margin-right: 10px; font-size: 14px; vertical-align: 2px; }
+  .slot { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .slot:last-child { border-bottom: none; }
+  .slot .ico { font-size: 20px; flex: 0 0 28px; text-align: center; }
+  .slot .txt b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .slot .txt { font-size: 14.5px; }
+  .meals { background: var(--teal-50); border-radius: 12px; padding: 4px 14px; margin-top: 12px; }
+
+  .results-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 820px) { .results-grid { grid-template-columns: 3fr 2fr; align-items: start; } }
+  .side-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--card-shadow); padding: 20px; margin-bottom: 20px; }
+  .side-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+  .side-card ul { list-style: none; }
+  .side-card li { margin-bottom: 10px; font-size: 14.5px; padding-left: 22px; position: relative; }
+  .side-card li::before { content: "✦"; position: absolute; left: 0; color: var(--saffron); }
+  .side-card li b { color: var(--teal-800); }
+  .side-card.avoid li::before { content: "⚠"; }
+
+  table.budget { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  table.budget td, table.budget th { padding: 8px 6px; text-align: right; border-bottom: 1px dashed var(--border); }
+  table.budget td:first-child, table.budget th:first-child { text-align: left; }
+  table.budget tr.total td { font-weight: 800; border-top: 2px solid var(--teal-800); border-bottom: none; font-size: 15.5px; }
+  .table-scroll { overflow-x: auto; }
+
+  .result-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+
+  details.settings { margin-top: 28px; border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; background: #fafcfb; }
+  details.settings summary { cursor: pointer; font-weight: 700; font-size: 14.5px; color: var(--muted); }
+  details.settings .inner { margin-top: 14px; }
+  details.settings input { width: 100%; max-width: 420px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; }
+  details.settings .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .key-status { font-size: 13px; margin-top: 8px; font-weight: 600; }
+  .key-status.on { color: var(--teal-800); }
+  .key-status.off { color: var(--muted); }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0 40px; }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2.5px solid var(--teal-100); border-top-color: var(--teal-800); border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -3px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo">🧳</div>
+    <h1>Safar <em>Saathi</em></h1>
+    <p class="tag">Day-by-day India trip plans that feel like advice from a local friend — real food spots (no tourist traps), hidden gems, honest transport costs, and a full budget breakdown.</p>
+    <div class="cta"><button class="btn-primary" onclick="document.getElementById('planner').scrollIntoView()">Plan my trip 🗺️</button></div>
+  </div>
+</header>
+
+<section id="planner">
+  <div class="wrap">
+    <div class="card">
+      <h2>Where are we going?</h2>
+      <p class="sub">Six destinations are built in with hand-picked local detail. Add an API key in Settings and Claude plans any city in India.</p>
+
+      <div class="field">
+        <label for="city-input">Destination</label>
+        <input type="text" id="city-input" list="city-list" placeholder="e.g. Jaipur, Goa, Varanasi…" autocomplete="off">
+        <datalist id="city-list"></datalist>
+        <div class="city-chips" id="city-chips"></div>
+      </div>
+
+      <div class="field">
+        <label for="days-val">Number of days</label>
+        <div class="stepper">
+          <button type="button" aria-label="Fewer days" onclick="stepDays(-1)">−</button>
+          <div class="val" id="days-val">3</div>
+          <button type="button" aria-label="More days" onclick="stepDays(1)">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Travel style</label>
+        <div class="style-chips" id="style-chips">
+          <button type="button" data-style="budget">🎒 Budget</button>
+          <button type="button" data-style="mid" class="on">🏨 Mid-range</button>
+          <button type="button" data-style="lux">✨ Luxury</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="budget-input">Budget per day (₹) <span style="font-weight:400;color:var(--muted)">— optional</span></label>
+        <input type="number" id="budget-input" min="0" step="250" placeholder="e.g. 3000">
+      </div>
+
+      <div class="field">
+        <label for="from-input">Starting from <span style="font-weight:400;color:var(--muted)">— optional</span></label>
+        <input type="text" id="from-input" placeholder="e.g. Chennai">
+      </div>
+
+      <div id="form-notice"></div>
+      <button class="btn-primary" id="plan-btn" onclick="planTrip()">Build my itinerary ✨</button>
+
+      <details class="settings">
+        <summary>⚙️ Settings — optional AI for any city</summary>
+        <div class="inner">
+          <p class="hint" style="margin-bottom:10px">Built-in: Jaipur, Goa, Varanasi, Udaipur, Munnar, Pondicherry. With an Anthropic API key, Claude plans <i>any</i> Indian destination. The key is stored only in this browser and sent only to api.anthropic.com.</p>
+          <input type="password" id="api-key-input" placeholder="sk-ant-…">
+          <div class="row">
+            <button type="button" class="btn-ghost" onclick="saveKey()">Save key</button>
+            <button type="button" class="btn-ghost" onclick="clearKey()">Clear key</button>
+          </div>
+          <div class="key-status" id="key-status"></div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div class="trip-head" id="trip-head"></div>
+    <div id="budget-banner"></div>
+    <div class="results-grid">
+      <div id="days-col"></div>
+      <div id="side-col"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-ghost" onclick="document.getElementById('planner').scrollIntoView()">✏️ Change plan</button>
+      <button class="btn-ghost" onclick="window.print()">🖨️ Print / save PDF</button>
+    </div>
+  </div>
+</section>
+
+<footer>Made with 🚂 chai and window seats — prices are honest estimates; haggle like a local.</footer>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   CITY DATABASE — 6 destinations, written like a local friend would
+   costs are per person per day in ₹ by travel style
+   ===================================================================== */
+const STYLES = { budget: "Budget 🎒", mid: "Mid-range 🏨", lux: "Luxury ✨" };
+
+const CITIES = [
+{
+  name: "Jaipur", aliases: ["pink city", "jaipur rajasthan"], state: "Rajasthan", emoji: "🏰",
+  bestTime: "October to March — daytime is a pleasant 20–28°C and the evenings at the forts are gorgeous. The Jaipur Literature Festival (late Jan) is brilliant but book stays early.",
+  avoid: [
+    "May–June: it genuinely hits 45°C, the forts are punishing by 11am.",
+    "\"Gem factory\" and \"government emporium\" detours your auto driver suggests — classic commission traps. A firm 'nahi chahiye' works.",
+    "Amber Fort after 10:30am — the tour-bus crowds arrive; go at opening (8am).",
+  ],
+  gems: [
+    { t: "Panna Meena ka Kund", d: "the symmetrical stepwell 5 min walk from Amber Fort's back gate — most tour groups never find it." },
+    { t: "Galta Ji at golden hour", d: "the 'monkey temple' in a hill pass; skip the touts and climb to the sun temple for the best free city view." },
+    { t: "Blue pottery workshop in Sanganer", d: "watch (and try) the craft instead of buying it marked-up in Bapu Bazaar." },
+    { t: "Padao Cafe on Nahargarh's ramparts", d: "a ₹100 chai with the whole pink city glowing below at sunset." },
+    { t: "Old city heritage walk at 7am", d: "the havelis of Chandpol before shutters open — chai + doodh-jalebi with the shopkeepers." },
+  ],
+  transport: [
+    { mode: "Auto-rickshaw", cost: "₹50–150 per hop", note: "agree the fare before you sit — meters are decorative here" },
+    { mode: "Uber / Ola", cost: "₹80–200 across town", note: "cheap and drama-free; use for Amber (30 min ride)" },
+    { mode: "E-rickshaw in the old city", cost: "₹30–50", note: "the sane way between bazaars" },
+    { mode: "Full-day cab", cost: "₹2,300–2,800", note: "worth it on your Amber + Nahargarh day if you're 3–4 people" },
+  ],
+  intercity: "Trains from Delhi take 4–5h (₹300–800 in AC chair car); from Mumbai it's an overnighter (₹900–1,800). Flights from the metros run ₹3,000–6,000 if booked 3+ weeks out.",
+  costs: {
+    budget: { stay: 800, food: 500, transport: 300, activities: 300 },
+    mid:    { stay: 2500, food: 1000, transport: 700, activities: 600 },
+    lux:    { stay: 8000, food: 2500, transport: 2000, activities: 1500 },
+  },
+  days: [
+    { title: "Amber Fort & the old city",
+      morning: "Be at Amber Fort by 8am — walk up the ramp like the locals instead of the elephant ride (the elephants have a rough life anyway). On the way out, slip through the back lane to Panna Meena ka Kund stepwell.",
+      afternoon: "Photo stop at Jal Mahal on the drive back, then City Palace (₹300; the ₹1,500 royal-quarters ticket is skippable). Cool off in the museum galleries during peak heat.",
+      evening: "Hawa Mahal glows around 5pm — see it from the Wind View Cafe rooftop opposite (buy a lassi, the view is the ticket). Then wander Johari Bazaar as the lights come on.",
+      breakfast: "Pyaaz kachori + jalebi at Rawat Misthan Bhandar (₹60 will change your life)",
+      lunch: "Rajasthani thali at LMB (Laxmi Misthan Bhandar) in Johari Bazaar — ₹400, arrive hungry",
+      dinner: "Masala Chowk food court at Ramniwas Bagh — 20 famous street vendors in one courtyard, ₹150–250" },
+    { title: "Astronomy, art & a sunset fort",
+      morning: "Jantar Mantar right at opening (the giant sundial is accurate to 2 seconds — get the audio guide, it makes the stone instruments come alive), then Albert Hall's oddball museum.",
+      afternoon: "Auto out to Sanganer for a block-printing and blue pottery workshop (₹300–500), or the Anokhi Museum of Hand Printing if you'd rather watch than do.",
+      evening: "Nahargarh Fort for sunset — chai at Padao Cafe on the ramparts. Dinner back in town, or Chokhi Dhani village resort if you want the full folk-dance-and-thali theatre (₹1,100+, honestly fun with kids).",
+      breakfast: "Kanji vada + masala chai at Sahu Chai (Chaura Rasta) with the newspaper readers",
+      lunch: "Dal baati churma at Santosh Bhojnalaya — workers' canteen prices, wedding-level ghee",
+      dinner: "Laal maas at Handi on MI Road (₹500) — order roti, not naan, and thank me later" },
+    { title: "Temples, bazaars & a single-screen classic",
+      morning: "Galta Ji (monkey temple) before it heats up — climb past the tanks to the Surya Mandir for the panorama. Keep snacks zipped away; the monkeys are professionals.",
+      afternoon: "Bazaar crawl: mojari shoes in Bapu Bazaar, quilts in Chandpol, lac bangles in Maniharon ka Rasta. Bargain from half the quoted price with a smile.",
+      evening: "Catch any film at Raj Mandir — India's most gloriously over-the-top single-screen cinema (₹200–400, book the balcony). Finish with the famous Lassiwala on MI Road (the original — No. 312).",
+      breakfast: "Doodh-jalebi at Gopalji ka Rasta — dunk, don't sip",
+      lunch: "Thali at Sharma Dhaba on Sikar Road if you're bazaar-side, or Masala Chowk again (no shame)",
+      dinner: "Rooftop at Tattoo Cafe opposite Hawa Mahal — average food, unbeatable night view; eat light, you had lassi" },
+    { title: "Stepwell day trip",
+      morning: "Day trip to Abhaneri's Chand Baori (90 min drive, ₹2,500 return cab) — the 13-storey stepwell from every Instagram reel, minus the crowds on weekdays.",
+      afternoon: "Stop at the Harshat Mata temple next door, picnic lunch, and amble back via Dausa's roadside dhabas.",
+      evening: "Back in Jaipur for a slow evening — Central Park walk or a heritage hotel high tea (Rambagh Palace's verandah if you're feeling fancy, ₹1,500).",
+      breakfast: "Hotel breakfast early, or grab kachoris for the road from Rawat",
+      lunch: "Dhaba thali on the Agra road (₹150) — ask your driver where *he* eats",
+      dinner: "Home-style Rajasthani at Spice Court (Civil Lines) — their junglee maas is the sleeper hit" },
+  ],
+},
+{
+  name: "Goa", aliases: ["north goa", "south goa", "panjim", "panaji"], state: "Goa", emoji: "🏖️",
+  bestTime: "November to February — dry, 25–32°C, sea like bathwater, every shack open. Monsoon (Jun–Sep) is a secret second season: lush, empty and half-price, but water sports shut.",
+  avoid: [
+    "Dec 24 – Jan 1: prices triple, roads jam, and the party crowd descends. Unless that IS the plan.",
+    "Baga–Calangute stretch if you want actual Goa — it's the Times Square of beaches.",
+    "Taxis for everything — there's no Uber and cartel fares sting. Rent a scooter instead.",
+    "Swimming at unguarded beaches during monsoon — rip currents are no joke.",
+  ],
+  gems: [
+    { t: "Divar Island ferry loop", d: "free ferry from Old Goa, cycle sleepy Portuguese lanes that time forgot." },
+    { t: "Fontainhas at 7am", d: "Panjim's Latin quarter in soft light — pastel houses, azulejo tiles, and poder bread bicycles doing rounds." },
+    { t: "Bhatti Village, Nerul", d: "a family-run backyard eatery — order the rawa-fried mussels and whatever fish came in that morning." },
+    { t: "Tambdi Surla temple", d: "a 12th-century Kadamba stone temple alone in the jungle at the foot of the ghats." },
+    { t: "Joseph Bar, Fontainhas", d: "hole-in-the-wall tavern; try urrak (cashew spirit, Feb–May) with locals spilling onto the steps." },
+  ],
+  transport: [
+    { mode: "Rented scooter", cost: "₹350–500/day + petrol", note: "the only correct answer; helmet on, license with you" },
+    { mode: "GoaMiles app cab", cost: "₹300–800 per trip", note: "the regulated alternative where taxis overquote" },
+    { mode: "Ferries", cost: "free–₹10", note: "Divar, Chorão — they take scooters too" },
+    { mode: "Local bus", cost: "₹15–40", note: "Mapusa/Panjim hubs; slow, cheerful, dirt cheap" },
+  ],
+  intercity: "Flights to Goa (GOI/GOX) from metros run ₹2,500–7,000. Trains land at Madgaon/Thivim — the Konkan Railway from Mumbai (₹700–1,500, 8–12h) has the best window views in India.",
+  costs: {
+    budget: { stay: 1000, food: 600, transport: 450, activities: 300 },
+    mid:    { stay: 3500, food: 1200, transport: 600, activities: 800 },
+    lux:    { stay: 10000, food: 3000, transport: 1500, activities: 2000 },
+  },
+  days: [
+    { title: "North Goa beaches & cliffs",
+      morning: "Scooter to Chapora Fort early (the 'Dil Chahta Hai' one) — 15-min climb, all of Vagator below you. Then Anjuna's rocky south end for a swim before the day crowd.",
+      afternoon: "Long shack lunch, then flea-market browsing if it's Wednesday (Anjuna market) — bargain hard, walk away twice.",
+      evening: "Sunset from Ozran (Little Vagator) with the Shiva face carving, then Saturday Night Market at Arpora if it's the season and the day.",
+      breakfast: "Ros omelette from a street cart (₹80) — Goa's greatest hangover invention, no hangover required",
+      lunch: "Fish thali at Vinayak Family Restaurant, Assagao (₹250) — the one locals actually queue for",
+      dinner: "Bhatti Village in Nerul — call ahead, order the mussels and chonak fish" },
+    { title: "Panjim, Old Goa & river islands",
+      morning: "Fontainhas heritage walk while it's cool — Panjim church steps, Mala lane tiles, confeitaria coffee. Then the Basilica of Bom Jesus and Sé Cathedral in Old Goa (free).",
+      afternoon: "Free ferry to Divar Island — rent or bring a cycle, loop the village lanes, wave at everyone (they'll wave first).",
+      evening: "Back in Panjim: feni tasting at Joseph Bar, dinner in the Latin quarter, gelato on the promenade.",
+      breakfast: "Bhaji-pao at Cafe Tato, Panjim (₹90) — the old-school Goan breakfast institution",
+      lunch: "Anandashram, Fontainhas — modest room, monumental fish curry rice (₹200)",
+      dinner: "Viva Panjim for xacuti and bebinca in a heritage house (₹700), or The Black Sheep Bistro if it's a splurge night" },
+    { title: "Slow South Goa",
+      morning: "Ride or cab south to Palolem — kayak the calm bay (₹300/hr) or just claim a palm and a paperback. Agonda if you want even quieter.",
+      afternoon: "Cabo de Rama fort — crumbling walls, crashing sea, almost nobody. Late lunch at a cliff cafe in Cola or Agonda.",
+      evening: "Palolem sunset, then silent-disco headphones at Silent Noise (Saturdays) or beach-shack seafood by candlelight.",
+      breakfast: "Poi bread + chorizo from a local bakery before the ride south",
+      lunch: "Zest Cafe, Agonda for smoothie bowls, or fresh-catch thali at any family shack off the main drag",
+      dinner: "Grilled kingfish at a Palolem shack — pick the one full of Goans, not the one with a tout" },
+    { title: "Spices, waterfalls & backwaters",
+      morning: "Day trip inland: Dudhsagar Falls jeep safari (₹3,000/jeep of 7, Oct–May; book at Mollem) — the train-crossing-the-falls postcard in real life.",
+      afternoon: "Spice plantation lunch stop near Ponda (₹500 with a banana-leaf thali) — the tour is touristy but the cardamom-scented walk is lovely.",
+      evening: "Sunset river cruise alternative: skip the party boats and take the Chorão ferry at golden hour with the egrets coming home to Salim Ali sanctuary.",
+      breakfast: "Mapusa market breakfast if it's Friday — Goan sausages, banana buns, chouriço pao",
+      lunch: "Plantation thali near Ponda (included in most spice-farm tickets)",
+      dinner: "Mum's Kitchen, Panjim — grandma-recipe Goan food; the crab xec xec is the order" },
+  ],
+},
+{
+  name: "Varanasi", aliases: ["banaras", "benares", "kashi"], state: "Uttar Pradesh", emoji: "🛶",
+  bestTime: "October to March. Dev Deepawali (Nov full moon) is the city at its most magical — a million diyas on the ghats — but book months ahead. Mornings are misty and perfect.",
+  avoid: [
+    "April–June: 42°C+ and the stone ghats become griddles.",
+    "Peak monsoon (Jul–Aug): the river swallows the ghats and boat rides stop.",
+    "Anyone who approaches YOU offering to be a guide, a priest, or a 'ceremony' — polite, firm no. Real priests don't recruit.",
+    "Fixed-price confusion on boats: agree the fare AND the duration before stepping in.",
+  ],
+  gems: [
+    { t: "Subah-e-Banaras at Assi Ghat", d: "the 5am aarti + classical raga recital as the sun rises — quieter and more moving than the evening show." },
+    { t: "Malaiyo (winter only)", d: "saffron milk-foam dessert that exists only on Banaras mornings, Nov–Feb, sold from clay bowls in Chowk." },
+    { t: "The inner galis of Bengali Tola", d: "get purposely lost between Assi and Dashashwamedh — wrestling akharas, chai stalls, 300-year-old doorways." },
+    { t: "Ramnagar Fort by ferry", d: "cross the river to the maharaja's dusty, wonderful museum of vintage cars and clocks." },
+    { t: "Nepali Temple's woodwork", d: "a tiny Kathmandu-style pagoda above Lalita Ghat most people walk straight past." },
+  ],
+  transport: [
+    { mode: "Walking", cost: "free", note: "the old city is car-free by design; embrace the maze" },
+    { mode: "E-rickshaw", cost: "₹20–50 shared", note: "for godowlia–assi–BHU hops" },
+    { mode: "Auto-rickshaw", cost: "₹80–150", note: "station to ghats; agree first" },
+    { mode: "Sunrise boat", cost: "₹150–200/seat shared, ₹600–1,000 private", note: "row boats > motor boats for the silence" },
+  ],
+  intercity: "Trains connect everywhere (Delhi 8–12h, ₹500–1,500; the Vande Bharat does it in 8). Flights from metros ₹3,000–6,500 to LKO... sorry, VNS — Babatpur airport, 45 min from the ghats (₹700 taxi).",
+  costs: {
+    budget: { stay: 600, food: 400, transport: 250, activities: 300 },
+    mid:    { stay: 2000, food: 900, transport: 500, activities: 600 },
+    lux:    { stay: 7000, food: 2200, transport: 1200, activities: 1500 },
+  },
+  days: [
+    { title: "The river at dawn & the aarti at dusk",
+      morning: "Sunrise rowing boat from Assi toward Manikarnika (start 5:30am) — the ghats waking up is the whole point of Varanasi. Afterwards, breakfast-crawl the galis.",
+      afternoon: "Kashi Vishwanath temple mid-morning (lockers for phones; queue moves fast on weekdays), then rest through the heat like everyone else does. Late afternoon: Sankat Mochan and the BHU campus + Bharat Kala Bhavan museum.",
+      evening: "Ganga aarti at Dashashwamedh — either arrive 5:30pm for front-row steps, or watch from a boat on the water (₹200/seat). Both are right answers.",
+      breakfast: "Kachori-sabzi + jalebi at Ram Bhandar, Thatheri Bazaar (₹50)",
+      lunch: "Baati Chokha (the restaurant, Teliyabagh) — rustic litti-chokha theatre, ₹250",
+      dinner: "Tamatar chaat + palak patta chaat at Kashi Chat Bhandar, Godowlia (₹100) — dinner of champions" },
+    { title: "Buddha's sermon & the weavers",
+      morning: "Sarnath, where Buddha first taught (30 min, ₹200 auto) — the Dhamek stupa, the excellent ASI museum (₹5!), and the bodhi tree grove are genuinely peaceful.",
+      afternoon: "Back in the city: Banarasi silk at the source — weaver workshops around Peeli Kothi/Madanpura, looms clacking. Buy here if you buy at all (a real Banarasi starts ~₹4,000).",
+      evening: "Assi Ghat at dusk — chai on the steps, live baul or classical music at the ghat-side cafes, students debating everything.",
+      breakfast: "Blue Lassi Shop near Manikarnika — pomegranate lassi in a clay kulhad (₹120), a Banaras rite of passage",
+      lunch: "Simple thali at Kerala Cafe or Dosa Cafe, Bhelupur (yes, Varanasi does great dosa)",
+      dinner: "Pahalwan Lassi & family restaurant, Lanka — malai-heavy everything, then a paan from Keshav Tambul" },
+    { title: "Slow morning, royal afternoon",
+      morning: "Subah-e-Banaras at Assi (5am, free) — yoga, raga, and the sun coming up over the water. Then the winter-morning malaiyo hunt in Chowk if it's Nov–Feb.",
+      afternoon: "Ferry across to Ramnagar Fort (₹20) — vintage Rolls-Royces, a medieval astronomy clock, and the Ganga from the other side. Delightfully unrestored.",
+      evening: "Quiet ghat-hop south of Assi — Tulsi and Bhadaini ghats at golden hour are where locals do their evening walk. Farewell paan at a Chowk institution.",
+      breakfast: "Malaiyo + hot milk at Chowk (winter), or chena dahi vada at Deena Chaat Bhandar",
+      lunch: "Aadha-aadha at Baba Thandai, Godowlia + kachori gali grazing",
+      dinner: "Canton Royale rooftop (Hotel Surya) if you want a proper sit-down, or street-food finale at Godowlia crossing" },
+    { title: "Yoga, music & the university town",
+      morning: "Drop-in yoga or pranayama class at an Assi-side school (₹300–500), then a slow gali breakfast.",
+      afternoon: "Learn something: a tabla or bansuri taster lesson in Bengali Tola (₹500/hr, ask at International Music Centre Ashram), or silk-brocade museum at TFC.",
+      evening: "One last boat at sunset — this time from Manikarnika toward Assi, watching the aarti fires recede from the water.",
+      breakfast: "Chai + toast-makkhan at a Pappu chai adda, eavesdropping on Banaras philosophy",
+      lunch: "Niyati Cafe or Bona Cafe, Assi — backpacker comfort food when you need a break from fried",
+      dinner: "Baati chokha rematch or Bhojpuri thali at Nevaan Restro — carbo-loading for the train home" },
+  ],
+},
+{
+  name: "Udaipur", aliases: ["city of lakes", "udaipur rajasthan"], state: "Rajasthan", emoji: "⛵",
+  bestTime: "September to March — right after monsoon the lakes are brimming and the hills are green; by Dec–Jan the light turns gold and evenings need a shawl.",
+  avoid: [
+    "April–June: 40°C+ and half-empty lakes take the magic down a notch.",
+    "Rooftop restaurants for *dinner* — most trade on the view, not the food. Go for chai-time instead, eat where locals eat.",
+    "The 'art school student exhibition' hustle near the City Palace — sweet pitch, printed 'miniatures'.",
+  ],
+  gems: [
+    { t: "Bahubali Hills at sunrise", d: "20 min out of town above Badi Lake — the young crowd's secret sunrise spot before it hit reels." },
+    { t: "Bagore ki Haveli's Dharohar show", d: "₹150 folk dance in a lakeside haveli courtyard — the ghoomar and puppetry are goosebump-grade." },
+    { t: "Shilpgram off-season", d: "the crafts village without the fair crowds; potters and weavers happy to chat and demo." },
+    { t: "Ambrai Ghat at 6am", d: "the postcard Lake Palace view with only pigeons and one chai-wallah for company." },
+    { t: "A real miniature-painting sitting", d: "old-city ateliers will teach you a squirrel-hair-brush peacock for ₹500 — better than any souvenir." },
+  ],
+  transport: [
+    { mode: "Walking", cost: "free", note: "the old city between Jagdish and Ambrai is best on foot" },
+    { mode: "Auto-rickshaw", cost: "₹60–120 per hop", note: "hail on the street; hotel-called autos cost more" },
+    { mode: "Scooter rental", cost: "₹400/day", note: "for Sajjangarh, Badi lake and the hills" },
+    { mode: "Day cab to Kumbhalgarh/Ranakpur", cost: "₹3,000–3,500", note: "split it — the loop is a full glorious day" },
+  ],
+  intercity: "Overnight trains from Delhi (₹700–1,600) and a lovely day train from Jaipur (~7h, ₹400–900). Flights from metros ₹3,500–7,000 to Dabok, 30 min from the lake (₹600 cab).",
+  costs: {
+    budget: { stay: 800, food: 500, transport: 300, activities: 300 },
+    mid:    { stay: 2800, food: 1100, transport: 600, activities: 700 },
+    lux:    { stay: 12000, food: 3000, transport: 1500, activities: 2000 },
+  },
+  days: [
+    { title: "Palaces & the lake at dusk",
+      morning: "City Palace at opening (9am, ₹300) — the peacock courtyard and the views over Pichola justify every step. Jagdish Temple's carvings on your way out.",
+      afternoon: "Boat from Rameshwar Ghat to Jag Mandir island (₹450–700 by time of day) — go for the 4pm slot so you cruise back in slanting light.",
+      evening: "Ambrai Ghat for the Lake Palace lit up, then dinner on the Hanuman Ghat side.",
+      breakfast: "Poha + jalebi at a Jagdish Chowk stall, elbow-to-elbow with temple-goers (₹40)",
+      lunch: "Dal baati churma at Krishna Dal Bati Restro, Sarvaritu Vilas — ₹250 of ghee-soaked correctness",
+      dinner: "Ambrai restaurant if it's a splurge night (₹1,500, book the ghat-edge table) — the one rooftop-tier place where the food matches the view" },
+    { title: "Monsoon palace, folk night",
+      morning: "Sajjangarh (Monsoon Palace) early — the Aravalli views go on forever (₹110 + ₹90 shuttle). Stop at Badi Lake on the loop back.",
+      afternoon: "Fateh Sagar promenade + Moti Magri, then Shilpgram crafts village (₹75) — pick up honest handloom instead of tourist-shop 'pashmina'.",
+      evening: "Dharohar folk show at Bagore ki Haveli, 7pm sharp (₹150; queue by 6:15) — then kulfi at the ghat after.",
+      breakfast: "Kachori at JMB (Jagdish Mishthan Bhandar) — the syrupy imarti is your reward for early rising",
+      lunch: "Millets of Mewar, Chandpole — local grains, big thalis, the guilt-free option (₹350)",
+      dinner: "Charcoal by Carlsson (yes, really) for smoky kebab platters, or Natraj Dining Hall for the unlimited Gujarati-Rajasthani thali" },
+    { title: "Sunrise hills & old-city art",
+      morning: "Scooter or cab to Bahubali Hills for sunrise over Badi Lake (free, 40 min out-and-back plus lingering). Chai from the lone stall at the top.",
+      afternoon: "Old-city amble: miniature painting sitting at an atelier (₹500), then bookbinding-leather shops and the vintage car museum (₹400) if wheels excite you.",
+      evening: "Gangaur Ghat people-watching, then a lakeview chai at Jheel's Ginger Coffee Bar before a low-key dinner.",
+      breakfast: "Masala chai + bun maska at Cafe Edelweiss, hearing every language in Europe",
+      lunch: "Grasswood Cafe near Jagdish — homely continental when your stomach requests a thali break",
+      dinner: "Shree Shiv Shakti Dining or Khamma Ghani — proper Mewari home food, order the gatte ki sabzi" },
+    { title: "The great fort loop",
+      morning: "Day trip: Kumbhalgarh fort (2h drive) — the 36km Great Wall of India snake-walling over the hills. Walk the ramparts to the second gate at least.",
+      afternoon: "Ranakpur Jain temple on the loop back — 1,444 marble pillars, no two alike (₹200 with audio guide; dress modestly). Late thali lunch nearby.",
+      evening: "Roll back into Udaipur for a farewell stroll along Pichola — the palace lights doubling in the water never gets old.",
+      breakfast: "Early hotel breakfast or JMB kachori for the road",
+      lunch: "Thali at Mana Palace hotel near Ranakpur (most cabs stop here; it's actually good)",
+      dinner: "Upre by 1559 AD lakeside if celebrating, else Nukkad's home kitchen back in the old city" },
+  ],
+},
+{
+  name: "Munnar", aliases: ["munnar kerala", "tea hills"], state: "Kerala", emoji: "🍃",
+  bestTime: "September to May, with October–February the sweet spot — crisp 10–25°C air, mist in the valleys, tea at its greenest. Pack a light jacket; evenings genuinely get cold.",
+  avoid: [
+    "Heavy monsoon (June–August): landslide-prone roads and curtained-off views — though it's ethereally green and dirt cheap if you gamble.",
+    "Eravikulam National Park in Feb–March some years — it closes for Nilgiri tahr calving season; check before building your day around it.",
+    "The Mattupetty–Echo Point circuit at midday on weekends — it becomes a selfie traffic jam. Do it at 8am.",
+  ],
+  gems: [
+    { t: "Kolukkumalai sunrise jeep safari", d: "the world's highest organic tea estate, reached by a bone-rattling 4x4 at 4:30am — sunrise above a cloud ocean." },
+    { t: "Vattavada village", d: "beyond Top Station: strawberry and carrot farms in a hidden valley most itineraries skip." },
+    { t: "Lockhart Tea Factory tour", d: "smaller and more genuine than the crowded Tea Museum — you'll smell of leaves for hours (in a good way)." },
+    { t: "Anayirangal dam at dusk", d: "'where elephants descend' — wild herds really do come to the reservoir edge to drink." },
+    { t: "Marayoor jaggery & dolmens", d: "sandalwood forests, sugarcane presses, and Stone Age burial chambers in one weird wonderful detour." },
+  ],
+  transport: [
+    { mode: "Day cab (sightseeing circuit)", cost: "₹2,200–2,800", note: "no Uber/Ola here — book through your stay; fixed circuits are standard" },
+    { mode: "Auto-rickshaw", cost: "₹100–200 per hop", note: "fine within town; pricey for viewpoints" },
+    { mode: "Scooter rental", cost: "₹500/day", note: "glorious if you're confident on hairpin bends in mist" },
+    { mode: "Kolukkumalai jeep", cost: "₹1,400–1,700 per jeep", note: "only 4x4s can do it; book the evening before" },
+  ],
+  intercity: "Fly to Kochi (₹3,000–7,000 from metros), then it's a beautiful 4h ghat drive: taxi ₹3,000–3,500 or the ₹150 government bus if your spine is young. Trains reach Aluva/Ernakulam.",
+  costs: {
+    budget: { stay: 900, food: 450, transport: 500, activities: 300 },
+    mid:    { stay: 3000, food: 900, transport: 1200, activities: 600 },
+    lux:    { stay: 9000, food: 2200, transport: 2500, activities: 1200 },
+  },
+  days: [
+    { title: "Tea country classics",
+      morning: "Lockhart Tea Factory tour (₹250) — watch the leaf-to-cup process, then the gap-road viewpoint next door for your first proper valley gawp.",
+      afternoon: "The lakes circuit: Mattupetty dam, Echo Point (yell something kind), Kundala Lake pedal boats — cheesy, scenic, mandatory.",
+      evening: "Munnar town market: buy cardamom and homemade chocolate where the shopkeeper lets you taste first. Kathakali show at Punarjani (5pm, ₹300) if you're curious.",
+      breakfast: "Appam + veg stew at Saravana Bhavan, Munnar town (₹90)",
+      lunch: "Kerala meals on a banana leaf at Hotel Sree Krishna — unlimited rice, thoran, sambar (₹150)",
+      dinner: "Rapsy Restaurant in the bazaar — their biryani and Kerala parotta earn the queue (₹200)" },
+    { title: "Sunrise above the clouds",
+      morning: "Kolukkumalai jeep safari, 4:30am pickup — sunrise at 7,900ft over a sea of clouds, then chai at the old orthodox tea factory up top. Back by 10 for a big breakfast and a nap.",
+      afternoon: "Top Station viewpoint (the Tamil Nadu border panorama), pushing on to Vattavada's farm stalls for strawberries and mountain carrots.",
+      evening: "Easy evening — ayurvedic massage (₹1,200–2,000) or just a fireplace and a book; you earned it at 4:30am.",
+      breakfast: "Post-safari puttu-kadala feast back in town (₹80) — puttu steam cures all sleep debt",
+      lunch: "Roadside thattukada near Top Station — parotta-beef or veg kurma, eaten watching the drop",
+      dinner: "Karimeen pollichathu (pearl-spot fish in banana leaf) at Copper Castle or your homestay's table — ask for it spicy" },
+    { title: "Mountain goats & spice gardens",
+      morning: "Eravikulam National Park at opening (8am, ₹200) — the endangered Nilgiri tahr amble right past you on Rajamala's slopes. Check it's not calving-season closure (Feb–Mar).",
+      afternoon: "A small family spice garden in Kallar or Pallivasal (₹150–300) — cardamom, pepper vines, vanilla orchids; skip the big commercial ones.",
+      evening: "Anayirangal dam at dusk for a chance of wild elephants at the water's edge (keep distance, stay in/near the vehicle). Tea-tasting flight back in town.",
+      breakfast: "Idiyappam + egg curry at SN Restaurant (₹90)",
+      lunch: "Meals at Aroma or a thattukada near Rajamala gate",
+      dinner: "Homestay dinner if you have one (Kerala home food beats every restaurant); else Hotel Gurubhavan's fish curry meals" },
+    { title: "Sandalwood & stone-age detour",
+      morning: "Drive out to Marayoor (1.5h) — sandalwood forest stretch, then the muniyara dolmens: 3,000-year-old burial chambers you'll likely have to yourself.",
+      afternoon: "Watch jaggery being pressed and boiled at a roadside unit (buy a block, it's incredible in chai), picnic by the Pambar river.",
+      evening: "Last golden-hour walk into any tea estate near your stay — pickers knocking off, mist rolling in, the smell of the day's last flush.",
+      breakfast: "Dosa-chutney early at Saravana before the drive",
+      lunch: "Village toddy-shop meals near Marayoor if adventurous (the fish curry is the point), else pack from town",
+      dinner: "Farewell Kerala sadya-style spread — ask your stay a day ahead; most will do it for ₹300–400" },
+  ],
+},
+{
+  name: "Pondicherry", aliases: ["puducherry", "pondy", "pondichery"], state: "Puducherry", emoji: "🚲",
+  bestTime: "October to March — breezy 24–30°C, French-quarter walks are actually pleasant, and the sea is calm. Weekdays beat weekends (Chennai empties into Pondy every Saturday).",
+  avoid: [
+    "April–June: humid 38°C; White Town's charm wilts by 10am.",
+    "Weekend hotel pricing — rates jump 30–50% Fri–Sun; go midweek.",
+    "Paradise Beach at midday — the boat + beach combo is lovely early, a sunburnt queue by noon.",
+    "Auroville as a quick photo stop — the Matrimandir viewing point needs a timed pass; without a plan you'll see a car park.",
+  ],
+  gems: [
+    { t: "Rock Beach at 5:45am", d: "the promenade pre-traffic: fishermen, filter coffee, tai chi groups, and the sun coming up out of the Bay of Bengal." },
+    { t: "The Tamil Quarter (Vysial Street)", d: "everyone photographs White Town; the Franco-Tamil mansions a few streets west are the real architectural story." },
+    { t: "Serenity Beach surf lesson", d: "₹1,500 gets you standing on a wave by hour two — the surf school scene here is friendly and small." },
+    { t: "Veerampattinam fishing village", d: "a working beach with painted boats and zero cafes — cycle there for the un-Instagrammed coast." },
+    { t: "Gelateria Montecatini Terme", d: "an Italian-run gelato counter locals will defend with their lives. The tender-coconut flavour. Trust." },
+  ],
+  transport: [
+    { mode: "Bicycle rental", cost: "₹100/day", note: "the correct vehicle for White Town's grid" },
+    { mode: "Scooter rental", cost: "₹300–400/day", note: "for Auroville (30 min) and the beaches" },
+    { mode: "Auto-rickshaw", cost: "₹50–150 per hop", note: "negotiate; short hops shouldn't cross ₹100" },
+    { mode: "Chunnambar boat (Paradise Beach)", cost: "₹300 return", note: "first boats 9am — take the earliest" },
+  ],
+  intercity: "From Chennai it's a 3h ECR coastal drive — bus ₹200–600, cab ₹3,500. Nearest big airport is Chennai (MAA); Puducherry's own strip has thin service. Bengaluru is a 6–7h overnight bus (₹600–1,000).",
+  costs: {
+    budget: { stay: 900, food: 500, transport: 250, activities: 200 },
+    mid:    { stay: 2800, food: 1100, transport: 450, activities: 500 },
+    lux:    { stay: 8000, food: 2500, transport: 1000, activities: 1000 },
+  },
+  days: [
+    { title: "White Town on two wheels",
+      morning: "Rent a cycle and do the heritage grid before 9am — Rue Romain Rolland's bougainvillea walls, the lighthouse, Our Lady of Angels church. Aurobindo Ashram's flower-covered samadhi (free, silent, moving).",
+      afternoon: "Pondicherry Museum's quirky French-colonial attic (₹50), then cross the 'border' into the Tamil Quarter for the talking-house architecture of Vysial Street.",
+      evening: "Rock Beach promenade — it closes to traffic at 6pm and the whole town comes out. Bharathi Park ice-cream lap, dinner in a heritage villa.",
+      breakfast: "Idli-vada-filter coffee at Surguru (₹120) — arrive before the office crowd",
+      lunch: "Meals at Appachi or Aristo's rooftop for the old-Pondy vibe (₹250)",
+      dinner: "Villa Shanti's courtyard (₹1,200, book) if celebrating; Cafe Xtasi's wood-fired pizza if not" },
+    { title: "Auroville & the surf coast",
+      morning: "Auroville: visitors' centre first for the Matrimandir viewing-point pass (free, timed), then the walk through the banyan avenue to see the golden sphere. Browse the boutiques' incense and pottery.",
+      afternoon: "Long organic lunch in an Auroville cafe, then Serenity Beach — book a surf lesson (₹1,500) or just watch the longboarders from the breakwater.",
+      evening: "Sunset chai at a Kottakuppam rooftop cafe, gelato run at Montecatini back in town.",
+      breakfast: "Croissants + coffee at Baker Street (₹200) — the French bakery cliché exists because it's good",
+      lunch: "Auroville Bakery & Cafe or Naturellement garden cafe — farm bowls, wood-oven bread",
+      dinner: "Fish curry meals at a Kottakuppam local joint, or tandoor night at Le Terrasse seafront" },
+    { title: "Islands of calm & a boat to paradise",
+      morning: "Early boat from Chunnambar to Paradise Beach (first boat 9am, ₹300 return) — two clean golden hours before the crowd ferries in.",
+      afternoon: "Back for a lazy French-quarter lunch, then a spa hour or the Cluny Embroidery Centre (nuns' atelier in an 18th-century mansion — beautiful, untouristy).",
+      evening: "Cycle south along the coast to Veerampattinam fishing village for a working-shore sunset, then a farewell promenade walk.",
+      breakfast: "Pongal + vada at Hotel Krishna Vilas, Mission Street",
+      lunch: "Cafe des Arts courtyard (₹350) — the crepes-and-vintage-scooter postcard of Pondy, deservedly",
+      dinner: "A proper Creole spread at Carte Blanche (Hotel de l'Orient) — Franco-Tamil dishes you won't find elsewhere" },
+    { title: "Lake birds & slow crafts",
+      morning: "Ousteri Lake at dawn (30 min out) — pelicans, painted storks and dead-calm water; hire the forest-dept boat if it's running (₹150).",
+      afternoon: "A pottery taster session at Golden Bridge Pottery's orbit (₹500–800, book ahead) or paper-making tour at Sri Aurobindo Handmade Paper factory (₹50).",
+      evening: "Last evening ritual: beach walk, one more gelato, and dinner somewhere you can hear the sea.",
+      breakfast: "Masala dosa at Surguru Spot on ECR before the lake run",
+      lunch: "Thali at Adyar Ananda Bhavan or a beachside cafe at Serenity",
+      dinner: "Le Cafe on the promenade — open 24h, order the seafood platter and watch the waves under the lights" },
+  ],
+},
+];
+
+/* =====================================================================
+   STATE & MATCHING
+   ===================================================================== */
+const LS_KEY = "stp_api_key";
+const LS_AI_CACHE = "stp_ai_cache";
+
+let days = 3;
+let travelStyle = "mid";
+let lastPlan = null;
+
+function norm(s) { return s.toLowerCase().trim().replace(/\s+/g, " "); }
+
+function resolveCity(query) {
+  const q = norm(query);
+  if (!q) return null;
+  for (const c of CITIES) {
+    if (norm(c.name) === q || c.aliases.some(a => norm(a) === q)) return c;
+  }
+  for (const c of CITIES) {
+    const names = [c.name, ...c.aliases].map(norm);
+    if (names.some(n => n.includes(q) || q.includes(n))) return c;
+  }
+  return null;
+}
+
+function stepDays(d) {
+  days = Math.min(10, Math.max(1, days + d));
+  document.getElementById("days-val").textContent = days;
+}
+
+/* A generic wind-down module used when the trip is longer than the city's curated days */
+function spareDay(city, n) {
+  return {
+    title: "Your day, your pace",
+    morning: `Go back to whichever ${city.name} morning you loved most — the best trips repeat their favourite hour. Or pick an unvisited gem from the hidden-gems list and make a slow morning of it.`,
+    afternoon: "Long lunch, longer nap. Pick up gifts from the places you scouted earlier in the week (you'll bargain better the second time).",
+    evening: "Find the spot with your favourite view from this trip and just sit — no camera for the first ten minutes. That's the memory that sticks.",
+    breakfast: "Return to the breakfast you've been thinking about since day one",
+    lunch: "Ask your host / homestay where THEY eat on a day off — go there",
+    dinner: "Farewell dinner at your favourite find of the trip",
+  };
+}
+
+/* =====================================================================
+   AI FALLBACK — Claude via the Messages API, direct from the browser
+   ===================================================================== */
+function getKey() { return localStorage.getItem(LS_KEY) || ""; }
+function saveKey() {
+  const v = document.getElementById("api-key-input").value.trim();
+  if (v) localStorage.setItem(LS_KEY, v);
+  renderKeyStatus();
+}
+function clearKey() {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById("api-key-input").value = "";
+  renderKeyStatus();
+}
+function renderKeyStatus() {
+  const el = document.getElementById("key-status");
+  if (getKey()) { el.className = "key-status on"; el.textContent = "✓ API key saved on this device — any Indian destination works."; }
+  else { el.className = "key-status off"; el.textContent = "No key saved — the six built-in destinations are available."; }
+}
+function aiCache() { try { return JSON.parse(localStorage.getItem(LS_AI_CACHE)) || {}; } catch { return {}; } }
+function aiCacheSet(k, v) { const c = aiCache(); c[k] = v; try { localStorage.setItem(LS_AI_CACHE, JSON.stringify(c)); } catch {} }
+
+const DAY_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" }, morning: { type: "string" }, afternoon: { type: "string" }, evening: { type: "string" },
+    breakfast: { type: "string" }, lunch: { type: "string" }, dinner: { type: "string" },
+  },
+  required: ["title", "morning", "afternoon", "evening", "breakfast", "lunch", "dinner"],
+  additionalProperties: false,
+};
+const AI_SCHEMA = {
+  type: "object",
+  properties: {
+    emoji: { type: "string", description: "one emoji for the destination" },
+    state: { type: "string" },
+    bestTime: { type: "string", description: "best months to visit and why, 1-2 sentences" },
+    avoid: { type: "array", items: { type: "string" }, description: "2-4 things to avoid: seasons, scams, crowd traps" },
+    gems: { type: "array", items: { type: "object", properties: { t: { type: "string" }, d: { type: "string" } }, required: ["t", "d"], additionalProperties: false }, description: "3-5 hidden gems with name (t) and one-line description (d)" },
+    transport: { type: "array", items: { type: "object", properties: { mode: { type: "string" }, cost: { type: "string" }, note: { type: "string" } }, required: ["mode", "cost", "note"], additionalProperties: false } },
+    intercity: { type: "string", description: "rough cost ranges to reach this city from major Indian metros by train/flight" },
+    costs: {
+      type: "object",
+      properties: {
+        stay: { type: "number" }, food: { type: "number" }, transport: { type: "number" }, activities: { type: "number" },
+      },
+      required: ["stay", "food", "transport", "activities"],
+      additionalProperties: false,
+      description: "per person per day in rupees for the requested travel style",
+    },
+    days: { type: "array", items: DAY_SCHEMA },
+  },
+  required: ["emoji", "state", "bestTime", "avoid", "gems", "transport", "intercity", "costs", "days"],
+  additionalProperties: false,
+};
+
+async function aiPlanCity(city, nDays, style) {
+  const cacheKey = `${norm(city)}|${nDays}|${style}`;
+  const cached = aiCache()[cacheKey];
+  if (cached) return cached;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": getKey(),
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-opus-4-8",
+      max_tokens: 8192,
+      system: "You are an expert India travel planner who writes like a local friend, not a travel website. Recommend real, specific, currently-operating places — especially local food spots, never tourist traps. Be honest about scams and what to avoid. All costs in Indian rupees, realistic for the requested travel style.",
+      messages: [{ role: "user", content: `Plan ${nDays} day(s) in ${city}, India for a ${style === "lux" ? "luxury" : style === "mid" ? "mid-range" : "budget"} traveller. Produce exactly ${nDays} day entries.` }],
+      output_config: { format: { type: "json_schema", schema: AI_SCHEMA } },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const msg = body?.error?.message || `HTTP ${res.status}`;
+    throw new Error(res.status === 401 ? "API key was rejected — check it in Settings." : msg);
+  }
+  const data = await res.json();
+  if (data.stop_reason === "refusal") throw new Error("Claude declined this request.");
+  const text = (data.content || []).find(b => b.type === "text")?.text;
+  if (!text) throw new Error("Empty response from the API.");
+  const parsed = JSON.parse(text);
+
+  const cityObj = {
+    name: city.replace(/\b\w/g, c => c.toUpperCase()),
+    ai: true,
+    emoji: parsed.emoji || "📍",
+    state: parsed.state || "",
+    bestTime: parsed.bestTime,
+    avoid: parsed.avoid,
+    gems: parsed.gems,
+    transport: parsed.transport,
+    intercity: parsed.intercity,
+    costs: { [style]: parsed.costs },
+    days: parsed.days,
+  };
+  aiCacheSet(cacheKey, cityObj);
+  return cityObj;
+}
+
+/* =====================================================================
+   PLAN + RENDER
+   ===================================================================== */
+function fmtMoney(n) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+
+async function planTrip() {
+  const noticeBox = document.getElementById("form-notice");
+  noticeBox.innerHTML = "";
+  const cityQuery = document.getElementById("city-input").value.trim();
+  if (!cityQuery) {
+    noticeBox.innerHTML = `<div class="notice err">Pick a destination first — tap one of the suggestions or type any city.</div>`;
+    return;
+  }
+
+  let city = resolveCity(cityQuery);
+  const btn = document.getElementById("plan-btn");
+
+  if (!city) {
+    if (!getKey()) {
+      noticeBox.innerHTML = `<div class="notice">I only know <b>Jaipur, Goa, Varanasi, Udaipur, Munnar and Pondicherry</b> out of the box — “${cityQuery}” needs the AI. Add an Anthropic API key in ⚙️ Settings and Claude will plan any city in India.</div>`;
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spin"></span>Asking Claude to plan ${cityQuery}…`;
+    try {
+      city = await aiPlanCity(cityQuery, days, travelStyle);
+    } catch (e) {
+      noticeBox.innerHTML = `<div class="notice err">Couldn't plan “${cityQuery}”: ${e.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = "Build my itinerary ✨";
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = "Build my itinerary ✨";
+  }
+
+  // assemble the day list for the requested length
+  const dayModules = [];
+  for (let i = 0; i < days; i++) {
+    dayModules.push(city.days[i] || spareDay(city, i));
+  }
+
+  const costs = city.costs[travelStyle] || Object.values(city.costs)[0];
+  lastPlan = { city, dayModules, costs };
+  renderPlan();
+}
+
+function renderPlan() {
+  const { city, dayModules, costs } = lastPlan;
+  const from = document.getElementById("from-input").value.trim();
+  const budgetPerDay = parseFloat(document.getElementById("budget-input").value);
+
+  document.getElementById("trip-head").innerHTML =
+    `<h2>${city.emoji} ${days} day${days > 1 ? "s" : ""} in ${city.name}${city.ai ? " <span style='font-size:14px;background:var(--teal-100);color:var(--teal-800);border-radius:8px;padding:2px 8px;vertical-align:middle'>AI planned</span>" : ""}</h2>
+     <p>${city.state ? city.state + " · " : ""}${STYLES[travelStyle]}${from ? " · starting from " + from : ""}</p>`;
+
+  // budget banner
+  const estPerDay = costs.stay + costs.food + costs.transport + costs.activities;
+  const estTotal = estPerDay * days;
+  const banner = document.getElementById("budget-banner");
+  if (budgetPerDay > 0) {
+    if (estPerDay <= budgetPerDay) {
+      banner.innerHTML = `<div class="banner ok"><strong>${fmtMoney(estPerDay)}/day · fits your budget 🎉</strong>Estimated ${fmtMoney(estTotal)} for the full trip against your ${fmtMoney(budgetPerDay * days)} — ${fmtMoney((budgetPerDay - estPerDay) * days)} spare for shopping and second desserts.</div>`;
+    } else {
+      const cheaper = travelStyle === "lux" ? "mid-range" : travelStyle === "mid" ? "budget" : null;
+      banner.innerHTML = `<div class="banner over"><strong>${fmtMoney(estPerDay)}/day · over your ${fmtMoney(budgetPerDay)}/day by ${fmtMoney(estPerDay - budgetPerDay)}</strong>${cheaper ? `Try switching to ${cheaper} style, or trim a day.` : "Tight — consider dorm stays and street food days, totally doable here."}</div>`;
+    }
+  } else {
+    banner.innerHTML = `<div class="banner ok"><strong>${fmtMoney(estPerDay)}/day · ${fmtMoney(estTotal)} total</strong>Estimated for ${STYLES[travelStyle].toLowerCase().replace(/ .$/, "")} travel, per person, excluding getting there.</div>`;
+  }
+
+  // day cards
+  const daysCol = document.getElementById("days-col");
+  daysCol.innerHTML = "";
+  dayModules.forEach((d, i) => {
+    const card = document.createElement("div");
+    card.className = "day-card";
+    card.innerHTML = `<h3><span class="dnum">Day ${i + 1}</span>${d.title}</h3>
+      <div class="slot"><div class="ico">🌅</div><div class="txt"><b>Morning</b>${d.morning}</div></div>
+      <div class="slot"><div class="ico">☀️</div><div class="txt"><b>Afternoon</b>${d.afternoon}</div></div>
+      <div class="slot"><div class="ico">🌙</div><div class="txt"><b>Evening</b>${d.evening}</div></div>
+      <div class="meals">
+        <div class="slot"><div class="ico">🍳</div><div class="txt"><b>Breakfast</b>${d.breakfast}</div></div>
+        <div class="slot"><div class="ico">🍛</div><div class="txt"><b>Lunch</b>${d.lunch}</div></div>
+        <div class="slot"><div class="ico">🍽️</div><div class="txt"><b>Dinner</b>${d.dinner}</div></div>
+      </div>`;
+    daysCol.appendChild(card);
+  });
+
+  // side column
+  const side = document.getElementById("side-col");
+  const budgetRows = [
+    ["Stay", costs.stay], ["Food", costs.food], ["Local transport", costs.transport], ["Activities & entries", costs.activities],
+  ];
+  side.innerHTML = `
+    <div class="side-card">
+      <h3>💰 Budget breakdown <span style="font-weight:400;font-size:13px;color:var(--muted)">(per person)</span></h3>
+      <div class="table-scroll"><table class="budget">
+        <tr><th></th><th>/day</th><th>× ${days} days</th></tr>
+        ${budgetRows.map(([label, v]) => `<tr><td>${label}</td><td>${fmtMoney(v)}</td><td>${fmtMoney(v * days)}</td></tr>`).join("")}
+        <tr class="total"><td>Total</td><td>${fmtMoney(estPerDay)}</td><td>${fmtMoney(estTotal)}</td></tr>
+      </table></div>
+      <p class="hint" style="margin-top:10px">🚆 Getting there: ${city.intercity}</p>
+    </div>
+    <div class="side-card">
+      <h3>💎 Hidden gems locals love</h3>
+      <ul>${city.gems.map(gem => `<li><b>${gem.t}</b> — ${gem.d}</li>`).join("")}</ul>
+    </div>
+    <div class="side-card">
+      <h3>🚕 Getting around</h3>
+      <ul>${city.transport.map(t => `<li><b>${t.mode}</b> · ${t.cost} — ${t.note}</li>`).join("")}</ul>
+    </div>
+    <div class="side-card">
+      <h3>📅 Best time to visit</h3>
+      <p style="font-size:14.5px">${city.bestTime}</p>
+    </div>
+    <div class="side-card avoid">
+      <h3>🙅 What to avoid</h3>
+      <ul>${city.avoid.map(a => `<li>${a}</li>`).join("")}</ul>
+    </div>`;
+
+  const results = document.getElementById("results");
+  results.style.display = "block";
+  results.scrollIntoView({ behavior: "smooth" });
+}
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+(function init() {
+  const dl = document.getElementById("city-list");
+  const chips = document.getElementById("city-chips");
+  for (const c of CITIES) {
+    const o = document.createElement("option");
+    o.value = c.name;
+    dl.appendChild(o);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = c.emoji + " " + c.name;
+    b.onclick = () => { document.getElementById("city-input").value = c.name; };
+    chips.appendChild(b);
+  }
+  document.querySelectorAll("#style-chips button").forEach(b => {
+    b.onclick = () => {
+      travelStyle = b.dataset.style;
+      document.querySelectorAll("#style-chips button").forEach(x => x.classList.toggle("on", x === b));
+    };
+  });
+  document.getElementById("city-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); planTrip(); }
+  });
+  renderKeyStatus();
+})();
+</script>
+</body>
+</html>
