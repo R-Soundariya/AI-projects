@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh Cart — AI Grocery List Optimiser</title>
+<style>
+  :root {
+    --green-700: #15803d;
+    --green-600: #16a34a;
+    --green-100: #dcfce7;
+    --green-50: #f0fdf4;
+    --amber-100: #fef3c7;
+    --amber-800: #92400e;
+    --red-100: #fee2e2;
+    --red-800: #991b1b;
+    --ink: #1c2b22;
+    --muted: #5b6b60;
+    --border: #e4ece6;
+    --card-shadow: 0 1px 3px rgba(21, 128, 61, 0.08), 0 4px 14px rgba(21, 128, 61, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #ffffff;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- Hero ---------- */
+  header.hero { padding: 56px 0 40px; text-align: center; background: linear-gradient(180deg, var(--green-50) 0%, #ffffff 100%); }
+  .hero .logo { font-size: 44px; }
+  .hero h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
+  .hero h1 em { font-style: normal; color: var(--green-700); }
+  .hero p.tag { max-width: 560px; margin: 14px auto 0; color: var(--muted); font-size: 17px; }
+  .hero .cta { margin-top: 26px; }
+
+  button { font: inherit; cursor: pointer; border: none; }
+  .btn-primary {
+    background: var(--green-700); color: #fff; font-weight: 700;
+    padding: 14px 28px; border-radius: 12px; font-size: 17px; min-height: 48px;
+    box-shadow: 0 2px 8px rgba(21,128,61,.25); transition: background .15s, transform .1s;
+  }
+  .btn-primary:hover { background: var(--green-600); }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-ghost {
+    background: #fff; color: var(--green-700); font-weight: 600;
+    padding: 10px 18px; border-radius: 10px; border: 1.5px solid var(--green-700); min-height: 44px;
+  }
+  .btn-ghost:hover { background: var(--green-50); }
+
+  /* ---------- Form card ---------- */
+  section { padding: 36px 0; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--card-shadow); padding: 26px 22px; }
+  .card h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .card p.sub { color: var(--muted); font-size: 14.5px; margin-bottom: 20px; }
+  .field { margin-bottom: 22px; }
+  .field > label { display: block; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* stepper */
+  .stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .stepper button { width: 48px; height: 48px; background: var(--green-50); color: var(--green-700); font-size: 22px; font-weight: 700; }
+  .stepper button:hover { background: var(--green-100); }
+  .stepper .val { width: 64px; text-align: center; font-size: 20px; font-weight: 800; }
+
+  /* meal input */
+  .meal-input-row { display: flex; gap: 8px; }
+  .meal-input-row input {
+    flex: 1; min-width: 0; padding: 12px 14px; font-size: 16px;
+    border: 1.5px solid var(--border); border-radius: 12px; outline: none;
+  }
+  .meal-input-row input:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-100); }
+  input[type="number"] { padding: 12px 14px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 12px; outline: none; width: 180px; }
+  input[type="number"]:focus { border-color: var(--green-600); box-shadow: 0 0 0 3px var(--green-100); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-100); color: var(--green-700); font-weight: 600; font-size: 14.5px;
+    padding: 9px 12px; border-radius: 999px; min-height: 40px;
+  }
+  .chip .count { background: var(--green-700); color: #fff; border-radius: 999px; font-size: 12.5px; padding: 2px 9px; cursor: pointer; user-select: none; }
+  .chip .rm { background: none; color: var(--green-700); font-size: 17px; line-height: 1; padding: 2px; }
+  .chip.unknown { background: var(--amber-100); color: var(--amber-800); }
+  .chip.unknown .count { background: var(--amber-800); }
+  .chip.unknown .rm { color: var(--amber-800); }
+
+  .suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .suggest button {
+    background: #fff; border: 1.5px dashed var(--green-600); color: var(--green-700);
+    padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; min-height: 40px;
+  }
+  .suggest button:hover { background: var(--green-50); }
+
+  .notice { background: var(--amber-100); color: var(--amber-800); border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-top: 14px; }
+  .notice.err { background: var(--red-100); color: var(--red-800); }
+
+  /* ---------- Results ---------- */
+  #results { display: none; }
+  .banner { border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; font-size: 16px; }
+  .banner.ok { background: var(--green-100); color: var(--green-700); }
+  .banner.over { background: var(--red-100); color: var(--red-800); }
+  .banner strong { font-size: 22px; display: block; margin-bottom: 2px; }
+
+  .results-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 768px) { .results-grid { grid-template-columns: 3fr 2fr; align-items: start; } }
+
+  .gsec { margin-bottom: 20px; }
+  .gsec h3 {
+    font-size: 16px; font-weight: 800; padding: 10px 14px;
+    background: var(--green-50); border-radius: 10px; color: var(--green-700);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .gsec h3 .subtotal { font-size: 14px; font-weight: 700; color: var(--muted); }
+  .gsec ul { list-style: none; margin-top: 4px; }
+  .gsec li {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px dashed var(--border);
+    cursor: pointer; border-radius: 8px;
+  }
+  .gsec li:hover { background: var(--green-50); }
+  .gsec li .iname { flex: 1; font-weight: 600; }
+  .gsec li .iqty { color: var(--muted); font-size: 14px; white-space: nowrap; }
+  .gsec li .icost { font-weight: 700; white-space: nowrap; min-width: 64px; text-align: right; }
+  .gsec li.excluded { opacity: .45; }
+  .gsec li.excluded .iname, .gsec li.excluded .icost { text-decoration: line-through; }
+  .gsec li .ai-tag { font-size: 11px; background: var(--green-100); color: var(--green-700); border-radius: 6px; padding: 1px 6px; font-weight: 700; }
+
+  .total-row { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 14px; font-size: 18px; font-weight: 800; border-top: 2px solid var(--green-700); margin-top: 6px; }
+  .exclude-hint { font-size: 13px; color: var(--muted); padding: 0 14px 8px; }
+
+  .side-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--card-shadow); padding: 20px; margin-bottom: 20px; }
+  .side-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+  .flag { border-left: 4px solid var(--amber-800); background: var(--amber-100); border-radius: 0 10px 10px 0; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; color: var(--amber-800); }
+  .flag strong { display: block; }
+  .tips li { margin: 0 0 10px 20px; font-size: 14.5px; }
+  .result-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ---------- Settings ---------- */
+  details.settings { margin-top: 28px; border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; background: #fafcfa; }
+  details.settings summary { cursor: pointer; font-weight: 700; font-size: 14.5px; color: var(--muted); }
+  details.settings .inner { margin-top: 14px; }
+  details.settings input { width: 100%; max-width: 420px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; }
+  details.settings .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .key-status { font-size: 13px; margin-top: 8px; font-weight: 600; }
+  .key-status.on { color: var(--green-700); }
+  .key-status.off { color: var(--muted); }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0 40px; }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2.5px solid var(--green-100); border-top-color: var(--green-700); border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -3px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo">🥬</div>
+    <h1>Fresh Cart <em>Grocery Optimiser</em></h1>
+    <p class="tag">Tell it who you're feeding, what you're cooking, and your weekly budget — get one consolidated grocery list organised by supermarket section, with quantities, estimated costs, and Sunday prep tips.</p>
+    <div class="cta"><button class="btn-primary" onclick="document.getElementById('planner').scrollIntoView()">Start planning 🛒</button></div>
+  </div>
+</header>
+
+<section id="planner">
+  <div class="wrap">
+    <div class="card">
+      <h2>Plan your week</h2>
+      <p class="sub">Everything runs on your device. Prices are typical Indian retail estimates in ₹.</p>
+
+      <div class="field">
+        <label for="people-val">How many people are you cooking for?</label>
+        <div class="stepper">
+          <button type="button" aria-label="Fewer people" onclick="stepPeople(-1)">−</button>
+          <div class="val" id="people-val">4</div>
+          <button type="button" aria-label="More people" onclick="stepPeople(1)">+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="meal-input">Meals for this week</label>
+        <div class="meal-input-row">
+          <input id="meal-input" list="meal-list" placeholder="e.g. dal tadka, pasta, poha…" autocomplete="off">
+          <button type="button" class="btn-ghost" onclick="addMealFromInput()">Add</button>
+        </div>
+        <datalist id="meal-list"></datalist>
+        <div class="chips" id="meal-chips"></div>
+        <div class="hint">Tap the <b>×1</b> badge on a meal to cook it more than once this week. Popular picks:</div>
+        <div class="suggest" id="suggest-chips"></div>
+      </div>
+
+      <div class="field">
+        <label for="budget-input">Weekly budget (₹)</label>
+        <input type="number" id="budget-input" min="0" step="100" placeholder="e.g. 2000">
+      </div>
+
+      <div id="form-notice"></div>
+
+      <button class="btn-primary" id="optimise-btn" onclick="optimise()">Optimise my groceries ✨</button>
+
+      <details class="settings">
+        <summary>⚙️ Settings — optional AI for unknown dishes</summary>
+        <div class="inner">
+          <p class="hint" style="margin-bottom:10px">Fresh Cart knows ~45 common dishes out of the box. Add an Anthropic API key and it can figure out the ingredients for <i>any</i> dish using Claude. The key is stored only in this browser (localStorage) and sent only to api.anthropic.com.</p>
+          <input type="password" id="api-key-input" placeholder="sk-ant-…">
+          <div class="row">
+            <button type="button" class="btn-ghost" onclick="saveKey()">Save key</button>
+            <button type="button" class="btn-ghost" onclick="clearKey()">Clear key</button>
+          </div>
+          <div class="key-status" id="key-status"></div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div id="budget-banner"></div>
+    <div class="results-grid">
+      <div class="card" id="list-card"></div>
+      <div>
+        <div class="side-card" id="flags-card" style="display:none"></div>
+        <div class="side-card" id="tips-card"></div>
+        <div class="result-actions">
+          <button class="btn-ghost" onclick="document.getElementById('planner').scrollIntoView()">✏️ Edit meals</button>
+          <button class="btn-ghost" onclick="startOver()">🔄 Start over</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Made with 🥕 — prices are estimates; your local sabzi mandi is probably cheaper.</footer>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   INGREDIENT PRICE TABLE
+   u: base unit ('g' | 'ml' | 'pc' | 'bunch' | 'pack')
+   p: ₹ per kg (g), per litre (ml), or per piece/bunch/pack
+   step: rounding increment in base units (realistic buyable amounts)
+   ===================================================================== */
+const SECTIONS = {
+  veg:   { label: "Vegetables & fruits", icon: "🥬" },
+  dairy: { label: "Dairy & eggs",        icon: "🥛" },
+  meat:  { label: "Meat & fish",         icon: "🍗" },
+  dry:   { label: "Dry groceries & spices", icon: "🌾" },
+  pkg:   { label: "Packaged & ready-made",  icon: "📦" },
+};
+const SECTION_ORDER = ["veg", "dairy", "meat", "dry", "pkg"];
+
+const ING = {
+  onion:        { n: "Onions",            s: "veg",   u: "g",  p: 35,   step: 250 },
+  tomato:       { n: "Tomatoes",          s: "veg",   u: "g",  p: 35,   step: 250 },
+  potato:       { n: "Potatoes",          s: "veg",   u: "g",  p: 30,   step: 250 },
+  cauliflower:  { n: "Cauliflower",       s: "veg",   u: "pc", p: 40,   step: 1 },
+  capsicum:     { n: "Capsicum",          s: "veg",   u: "g",  p: 80,   step: 100 },
+  garlic:       { n: "Garlic",            s: "veg",   u: "g",  p: 200,  step: 50 },
+  ginger:       { n: "Ginger",            s: "veg",   u: "g",  p: 160,  step: 50 },
+  greenChilli:  { n: "Green chillies",    s: "veg",   u: "g",  p: 120,  step: 50 },
+  coriander:    { n: "Coriander leaves",  s: "veg",   u: "bunch", p: 12, step: 1 },
+  mint:         { n: "Mint leaves",       s: "veg",   u: "bunch", p: 15, step: 1 },
+  curryLeaves:  { n: "Curry leaves",      s: "veg",   u: "bunch", p: 10, step: 1 },
+  lemon:        { n: "Lemons",            s: "veg",   u: "pc", p: 5,    step: 1 },
+  spinach:      { n: "Spinach (palak)",   s: "veg",   u: "bunch", p: 30, step: 1 },
+  peas:         { n: "Green peas",        s: "veg",   u: "g",  p: 80,   step: 250 },
+  carrot:       { n: "Carrots",           s: "veg",   u: "g",  p: 50,   step: 250 },
+  beans:        { n: "French beans",      s: "veg",   u: "g",  p: 70,   step: 250 },
+  cabbage:      { n: "Cabbage",           s: "veg",   u: "pc", p: 35,   step: 1 },
+  brinjal:      { n: "Brinjal (baingan)", s: "veg",   u: "g",  p: 40,   step: 250 },
+  okra:         { n: "Okra (bhindi)",     s: "veg",   u: "g",  p: 60,   step: 250 },
+  cucumber:     { n: "Cucumbers",         s: "veg",   u: "g",  p: 40,   step: 250 },
+  mushroom:     { n: "Mushrooms",         s: "veg",   u: "pack", p: 60, step: 1 },
+
+  paneer:       { n: "Paneer",            s: "dairy", u: "g",  p: 475,  step: 200 },
+  milk:         { n: "Milk",              s: "dairy", u: "ml", p: 60,   step: 500 },
+  curd:         { n: "Curd",              s: "dairy", u: "g",  p: 90,   step: 200 },
+  butter:       { n: "Butter",            s: "dairy", u: "g",  p: 600,  step: 100 },
+  cream:        { n: "Fresh cream",       s: "dairy", u: "ml", p: 350,  step: 200 },
+  cheese:       { n: "Cheese",            s: "dairy", u: "g",  p: 900,  step: 100 },
+  ghee:         { n: "Ghee",              s: "dairy", u: "ml", p: 650,  step: 200 },
+  eggs:         { n: "Eggs",              s: "dairy", u: "pc", p: 7,    step: 6 },
+
+  chicken:      { n: "Chicken",           s: "meat",  u: "g",  p: 220,  step: 250 },
+  fish:         { n: "Fish",              s: "meat",  u: "g",  p: 300,  step: 250 },
+
+  rice:         { n: "Rice (sona masoori)", s: "dry", u: "g",  p: 70,   step: 500 },
+  basmati:      { n: "Basmati rice",      s: "dry",   u: "g",  p: 120,  step: 500 },
+  toorDal:      { n: "Toor dal",          s: "dry",   u: "g",  p: 170,  step: 250 },
+  moongDal:     { n: "Moong dal",         s: "dry",   u: "g",  p: 150,  step: 250 },
+  uradDal:      { n: "Urad dal",          s: "dry",   u: "g",  p: 160,  step: 250 },
+  rajma:        { n: "Rajma (kidney beans)", s: "dry", u: "g", p: 160,  step: 250 },
+  kabuliChana:  { n: "Kabuli chana (chickpeas)", s: "dry", u: "g", p: 140, step: 250 },
+  atta:         { n: "Atta (wheat flour)", s: "dry",  u: "g",  p: 45,   step: 1000 },
+  maida:        { n: "Maida",             s: "dry",   u: "g",  p: 45,   step: 500 },
+  besan:        { n: "Besan",             s: "dry",   u: "g",  p: 100,  step: 500 },
+  poha:         { n: "Poha (flattened rice)", s: "dry", u: "g", p: 60,  step: 500 },
+  rava:         { n: "Rava (semolina)",   s: "dry",   u: "g",  p: 55,   step: 500 },
+  oats:         { n: "Oats",              s: "dry",   u: "g",  p: 200,  step: 400 },
+  oil:          { n: "Cooking oil",       s: "dry",   u: "ml", p: 140,  step: 500 },
+  sugar:        { n: "Sugar",             s: "dry",   u: "g",  p: 45,   step: 500 },
+  cumin:        { n: "Cumin seeds",       s: "dry",   u: "g",  p: 400,  step: 50 },
+  mustardSeeds: { n: "Mustard seeds",     s: "dry",   u: "g",  p: 200,  step: 50 },
+  turmeric:     { n: "Turmeric powder",   s: "dry",   u: "g",  p: 300,  step: 50 },
+  chilliPowder: { n: "Red chilli powder", s: "dry",   u: "g",  p: 400,  step: 50 },
+  corianderPowder: { n: "Coriander powder", s: "dry", u: "g",  p: 300,  step: 50 },
+  garamMasala:  { n: "Garam masala",      s: "dry",   u: "g",  p: 800,  step: 50 },
+  kasuriMethi:  { n: "Kasuri methi",      s: "dry",   u: "g",  p: 800,  step: 25 },
+  hing:         { n: "Hing (asafoetida)", s: "dry",   u: "g",  p: 2400, step: 10 },
+  wholeSpices:  { n: "Whole spices (bay, cinnamon, cloves…)", s: "dry", u: "g", p: 900, step: 50 },
+  blackPepper:  { n: "Black pepper",      s: "dry",   u: "g",  p: 900,  step: 25 },
+  sambarPowder: { n: "Sambar powder",     s: "dry",   u: "g",  p: 500,  step: 50 },
+  cashews:      { n: "Cashews",           s: "dry",   u: "g",  p: 1200, step: 50 },
+  peanuts:      { n: "Peanuts",           s: "dry",   u: "g",  p: 140,  step: 250 },
+  soyaChunks:   { n: "Soya chunks",       s: "dry",   u: "g",  p: 225,  step: 200 },
+
+  pasta:        { n: "Pasta (penne/fusilli)", s: "pkg", u: "g", p: 160, step: 500 },
+  pastaSauce:   { n: "Pasta sauce (jar)", s: "pkg",   u: "pc", p: 90,   step: 1 },
+  noodles:      { n: "Instant noodles",   s: "pkg",   u: "pack", p: 15, step: 1 },
+  bread:        { n: "Bread (loaf)",      s: "pkg",   u: "pc", p: 40,   step: 1 },
+  coconutMilk:  { n: "Coconut milk (can)", s: "pkg",  u: "pc", p: 90,   step: 1 },
+  dosaBatter:   { n: "Idli/dosa batter (1kg)", s: "pkg", u: "pc", p: 70, step: 1 },
+  soySauce:     { n: "Soy sauce (bottle)", s: "pkg",  u: "pc", p: 60,   step: 1 },
+};
+
+/* =====================================================================
+   MEAL DATABASE — quantities are for 4 people, one cooking
+   ===================================================================== */
+const TIP_BASE   = "Make a big batch of onion-tomato masala base on Sunday — it's the starting point for most of your curries.";
+const TIP_GG     = "Blend a week's worth of ginger-garlic paste on Sunday; it keeps 7 days refrigerated.";
+const TIP_DOUGH  = "Knead roti dough the night before — it keeps 2 days in an airtight box in the fridge.";
+const TIP_POTATO = "Boil potatoes on Sunday; they keep 3–4 days refrigerated and cut weeknight cooking in half.";
+const TIP_RICE   = "Cook rice in bulk — day-old refrigerated rice reheats well and is actually better for fried rice.";
+
+const MEALS = [
+  { name: "Dal tadka with rice", aliases: ["dal tadka", "dal fry", "dal rice", "dal chawal", "dal"], tips: [TIP_BASE, "Boil plain toor dal in bulk on Sunday — do a fresh 5-minute tadka the night you serve it."],
+    ing: { toorDal: 300, rice: 500, onion: 150, tomato: 150, garlic: 20, ginger: 10, greenChilli: 10, cumin: 5, turmeric: 3, chilliPowder: 5, hing: 1, ghee: 30, coriander: 0.5, lemon: 1 } },
+  { name: "Rajma chawal", aliases: ["rajma", "rajma rice", "kidney bean curry"], tips: [TIP_BASE, "Soak rajma overnight on Saturday; pressure-cook Sunday and refrigerate — it tastes better the next day."],
+    ing: { rajma: 300, rice: 500, onion: 200, tomato: 250, garlic: 20, ginger: 15, cumin: 5, chilliPowder: 5, corianderPowder: 8, garamMasala: 5, oil: 40, coriander: 0.5 } },
+  { name: "Chole (chana masala)", aliases: ["chole", "chana masala", "chhole", "chickpea curry"], tips: [TIP_BASE, "Soak kabuli chana overnight; cook with a tea bag for that deep dhaba colour."],
+    ing: { kabuliChana: 300, onion: 200, tomato: 250, garlic: 20, ginger: 15, wholeSpices: 5, chilliPowder: 5, corianderPowder: 8, garamMasala: 5, oil: 40, coriander: 0.5, lemon: 1, atta: 400 } },
+  { name: "Paneer butter masala with roti", aliases: ["paneer butter masala", "pbm", "paneer makhani", "butter paneer"], tips: ["Make the tomato-cashew gravy base for PBM a day ahead — it deepens in flavour.", TIP_DOUGH],
+    ing: { paneer: 400, butter: 50, cream: 100, tomato: 400, onion: 150, cashews: 25, garlic: 15, ginger: 10, kasuriMethi: 3, garamMasala: 5, chilliPowder: 5, oil: 20, atta: 400 } },
+  { name: "Palak paneer", aliases: ["palak paneer", "spinach paneer", "saag paneer"], tips: ["Blanch and purée the spinach on Sunday — the purée freezes perfectly.", TIP_DOUGH],
+    ing: { spinach: 2, paneer: 250, onion: 150, tomato: 100, garlic: 20, ginger: 10, cream: 50, cumin: 5, garamMasala: 3, oil: 30, atta: 400 } },
+  { name: "Matar paneer", aliases: ["matar paneer", "mutter paneer", "peas paneer"], tips: [TIP_BASE, TIP_DOUGH],
+    ing: { paneer: 250, peas: 200, onion: 150, tomato: 250, ginger: 10, garlic: 15, cumin: 5, garamMasala: 5, chilliPowder: 5, oil: 30, atta: 400 } },
+  { name: "Kadai paneer", aliases: ["kadai paneer", "karahi paneer"], tips: [TIP_BASE, TIP_DOUGH],
+    ing: { paneer: 300, capsicum: 200, onion: 200, tomato: 250, garlic: 15, ginger: 10, wholeSpices: 5, kasuriMethi: 3, chilliPowder: 5, oil: 30, atta: 400 } },
+  { name: "Aloo gobi", aliases: ["aloo gobi", "aloo gobhi", "potato cauliflower"], tips: [TIP_POTATO, "Chop cauliflower ahead and store it dry in a paper-towel-lined box — use within 3 days.", TIP_DOUGH],
+    ing: { potato: 400, cauliflower: 1, onion: 100, tomato: 150, ginger: 10, greenChilli: 10, cumin: 5, turmeric: 5, corianderPowder: 8, oil: 30, coriander: 0.5, atta: 400 } },
+  { name: "Jeera aloo", aliases: ["jeera aloo", "cumin potatoes"], tips: [TIP_POTATO, TIP_DOUGH],
+    ing: { potato: 500, cumin: 8, greenChilli: 10, turmeric: 3, oil: 30, coriander: 0.5, lemon: 1, atta: 400 } },
+  { name: "Aloo matar", aliases: ["aloo matar", "aloo mutter", "potato peas curry"], tips: [TIP_BASE, TIP_POTATO],
+    ing: { potato: 300, peas: 200, onion: 150, tomato: 200, cumin: 5, garamMasala: 3, oil: 30, atta: 400 } },
+  { name: "Bhindi masala", aliases: ["bhindi", "bhindi masala", "okra fry"], tips: ["Wash and fully dry the bhindi a day ahead — dry okra doesn't go slimy.", TIP_DOUGH],
+    ing: { okra: 500, onion: 200, tomato: 100, turmeric: 3, corianderPowder: 8, chilliPowder: 5, oil: 40, atta: 400 } },
+  { name: "Baingan bharta", aliases: ["baingan bharta", "bharta", "brinjal mash"], tips: ["Roast the brinjal a day ahead; the smoky flesh keeps fine refrigerated.", TIP_DOUGH],
+    ing: { brinjal: 600, onion: 200, tomato: 200, garlic: 20, greenChilli: 10, cumin: 5, oil: 30, coriander: 0.5, atta: 400 } },
+  { name: "Mixed veg curry", aliases: ["mix veg", "mixed veg", "veg curry", "mixed vegetable curry"], tips: ["Chop all the curry vegetables on Sunday and store in one airtight box.", TIP_BASE],
+    ing: { carrot: 150, beans: 150, peas: 100, potato: 200, onion: 150, tomato: 200, ginger: 10, garlic: 15, garamMasala: 5, oil: 30, atta: 400 } },
+  { name: "Cabbage sabzi", aliases: ["cabbage sabzi", "patta gobhi", "cabbage fry"], tips: [TIP_DOUGH],
+    ing: { cabbage: 1, peas: 100, cumin: 5, turmeric: 3, greenChilli: 10, oil: 25, atta: 400 } },
+  { name: "Soya chunk curry", aliases: ["soya curry", "soya chunk", "meal maker", "soya dish", "soyabean curry"], tips: ["Soak, squeeze and freeze the soya chunks on Sunday — drop them straight into the gravy.", TIP_BASE],
+    ing: { soyaChunks: 150, onion: 200, tomato: 250, garlic: 20, ginger: 15, garamMasala: 5, chilliPowder: 5, corianderPowder: 8, oil: 40, coriander: 0.5, rice: 400 } },
+  { name: "Mushroom masala", aliases: ["mushroom masala", "mushroom curry"], tips: [TIP_BASE],
+    ing: { mushroom: 2, onion: 200, tomato: 250, garlic: 20, cream: 50, garamMasala: 5, oil: 30, atta: 400 } },
+  { name: "Kadhi pakora", aliases: ["kadhi", "kadhi chawal", "kadi"], tips: ["Slightly sour curd makes the best kadhi — use curd that's a couple of days old."],
+    ing: { curd: 400, besan: 150, onion: 100, mustardSeeds: 3, cumin: 5, turmeric: 5, curryLeaves: 0.5, oil: 60, rice: 400 } },
+  { name: "Egg curry", aliases: ["egg curry", "anda curry", "egg masala"], tips: ["Boil the eggs on Sunday — they keep a week in the fridge.", TIP_BASE],
+    ing: { eggs: 6, onion: 200, tomato: 250, garlic: 20, ginger: 15, garamMasala: 5, chilliPowder: 5, oil: 40, rice: 400 } },
+  { name: "Chicken curry", aliases: ["chicken curry", "chicken masala", "chicken gravy"], tips: ["Marinate the chicken in curd and spices the night before.", TIP_GG],
+    ing: { chicken: 800, onion: 300, tomato: 250, garlic: 25, ginger: 20, curd: 100, garamMasala: 8, chilliPowder: 8, corianderPowder: 10, wholeSpices: 5, oil: 50, coriander: 0.5, rice: 400 } },
+  { name: "Butter chicken", aliases: ["butter chicken", "murgh makhani"], tips: ["Marinate the chicken overnight; make the tomato-cashew gravy a day ahead.", TIP_DOUGH],
+    ing: { chicken: 800, butter: 60, cream: 150, tomato: 500, cashews: 25, garlic: 20, ginger: 15, kasuriMethi: 3, garamMasala: 5, chilliPowder: 8, curd: 100, atta: 400 } },
+  { name: "Fish curry", aliases: ["fish curry", "meen curry", "fish masala"], tips: ["Buy fish fresh on the day you cook it, not on Sunday.", TIP_GG],
+    ing: { fish: 600, onion: 200, tomato: 250, garlic: 20, ginger: 15, mustardSeeds: 5, curryLeaves: 0.5, turmeric: 5, chilliPowder: 8, coconutMilk: 1, oil: 40, rice: 400 } },
+  { name: "Veg pulao", aliases: ["veg pulao", "pulao", "vegetable pulao", "pulav"], tips: ["Chop the pulao vegetables on Sunday and store in one box."],
+    ing: { basmati: 400, carrot: 100, beans: 100, peas: 100, onion: 150, wholeSpices: 8, ghee: 30, cashews: 20, mint: 0.5 } },
+  { name: "Soya pulao", aliases: ["soya pulao", "soya rice"], tips: ["Soak, squeeze and freeze the soya chunks on Sunday — drop them straight into the gravy."],
+    ing: { basmati: 400, soyaChunks: 100, onion: 150, capsicum: 100, wholeSpices: 8, ghee: 30, mint: 0.5 } },
+  { name: "Jeera rice", aliases: ["jeera rice", "cumin rice"], tips: [],
+    ing: { basmati: 400, cumin: 10, ghee: 30 } },
+  { name: "Veg biryani", aliases: ["veg biryani", "vegetable biryani"], tips: ["Deep-fry the onions (birista) ahead — they keep a week in an airtight jar."],
+    ing: { basmati: 500, onion: 300, curd: 200, carrot: 100, beans: 100, potato: 150, peas: 100, mint: 1, coriander: 0.5, wholeSpices: 10, chilliPowder: 5, ghee: 50, cashews: 20 } },
+  { name: "Chicken biryani", aliases: ["chicken biryani", "biryani"], tips: ["Marinate the chicken overnight and fry the birista onions ahead — assembly day becomes easy."],
+    ing: { basmati: 500, chicken: 800, onion: 300, curd: 200, garlic: 25, ginger: 20, mint: 1, coriander: 0.5, wholeSpices: 10, chilliPowder: 8, ghee: 50 } },
+  { name: "Khichdi", aliases: ["khichdi", "kichdi", "khichadi", "dal khichdi"], tips: [],
+    ing: { rice: 300, moongDal: 200, ghee: 30, cumin: 5, turmeric: 3, hing: 1, peas: 100 } },
+  { name: "Sambar rice", aliases: ["sambar rice", "sambar sadam", "sambar"], tips: ["Make sambar in bulk — it keeps 2 days and works for idli and dosa mornings too."],
+    ing: { rice: 400, toorDal: 250, sambarPowder: 30, tomato: 150, onion: 100, carrot: 100, beans: 100, mustardSeeds: 3, curryLeaves: 0.5, hing: 1, oil: 30 } },
+  { name: "Curd rice", aliases: ["curd rice", "thayir sadam", "dahi chawal"], tips: [TIP_RICE],
+    ing: { rice: 300, curd: 500, mustardSeeds: 3, curryLeaves: 0.5, ginger: 10, greenChilli: 10, oil: 20, carrot: 50 } },
+  { name: "Lemon rice", aliases: ["lemon rice", "chitranna"], tips: [TIP_RICE],
+    ing: { rice: 400, lemon: 3, peanuts: 50, mustardSeeds: 5, turmeric: 5, curryLeaves: 0.5, greenChilli: 15, oil: 40, hing: 1 } },
+  { name: "Veg fried rice", aliases: ["fried rice", "veg fried rice"], tips: [TIP_RICE, "Chop the stir-fry vegetables on Sunday and store in one box."],
+    ing: { rice: 400, carrot: 100, beans: 100, capsicum: 100, garlic: 20, soySauce: 1, oil: 40 } },
+  { name: "Poha", aliases: ["poha", "kanda poha", "flattened rice breakfast"], tips: ["Chop onions for the week on Sunday (store airtight); poha becomes a 10-minute breakfast."],
+    ing: { poha: 300, onion: 150, potato: 150, peanuts: 50, mustardSeeds: 5, turmeric: 3, curryLeaves: 0.5, greenChilli: 10, lemon: 1, oil: 30 } },
+  { name: "Upma", aliases: ["upma", "rava upma", "suji upma"], tips: ["Dry-roast the rava in bulk on Sunday — it keeps for weeks and speeds up the morning."],
+    ing: { rava: 300, onion: 100, carrot: 50, peas: 50, mustardSeeds: 5, uradDal: 10, curryLeaves: 0.5, ginger: 10, greenChilli: 10, oil: 40 } },
+  { name: "Idli with sambar", aliases: ["idli", "idly", "idli sambar"], tips: ["Make sambar in bulk — it keeps 2 days and works for idli and dosa mornings too."],
+    ing: { dosaBatter: 1, toorDal: 150, sambarPowder: 20, onion: 100, tomato: 100, mustardSeeds: 3, curryLeaves: 0.5, oil: 20 } },
+  { name: "Masala dosa", aliases: ["dosa", "masala dosa", "dosai"], tips: ["Make the potato masala filling ahead — it keeps 2 days refrigerated.", TIP_POTATO],
+    ing: { dosaBatter: 1, potato: 300, onion: 150, mustardSeeds: 3, turmeric: 3, curryLeaves: 0.5, oil: 40, greenChilli: 10 } },
+  { name: "Aloo paratha", aliases: ["aloo paratha", "paratha", "stuffed paratha"], tips: [TIP_POTATO, "Rolled parathas freeze well between sheets of baking paper — cook straight from frozen."],
+    ing: { atta: 500, potato: 400, greenChilli: 10, coriander: 0.5, butter: 50, curd: 200 } },
+  { name: "Besan chilla", aliases: ["besan chilla", "chilla", "cheela", "besan cheela"], tips: ["Mix the dry chilla batter base ahead — just add water and vegetables in the morning."],
+    ing: { besan: 300, onion: 100, tomato: 100, greenChilli: 10, coriander: 0.5, oil: 30 } },
+  { name: "Oats porridge", aliases: ["oats", "oatmeal", "oats porridge"], tips: [],
+    ing: { oats: 200, milk: 750, sugar: 30 } },
+  { name: "Bread omelette", aliases: ["bread omelette", "omelette", "egg toast"], tips: [],
+    ing: { bread: 1, eggs: 6, onion: 100, greenChilli: 10, butter: 30 } },
+  { name: "Veg sandwich", aliases: ["sandwich", "veg sandwich", "grilled sandwich"], tips: ["Make green chutney on Sunday — it keeps 5 days and lifts every sandwich."],
+    ing: { bread: 1, cucumber: 200, tomato: 150, onion: 100, cheese: 100, butter: 50, mint: 0.5, coriander: 0.5 } },
+  { name: "Tomato pasta", aliases: ["pasta", "red sauce pasta", "tomato pasta"], tips: ["Leftover pasta sauce doubles as a base for soya curry or a quick pizza-roti."],
+    ing: { pasta: 400, pastaSauce: 1, onion: 100, garlic: 20, capsicum: 150, cheese: 80, oil: 30 } },
+  { name: "White sauce pasta", aliases: ["white sauce pasta", "alfredo", "creamy pasta"], tips: [],
+    ing: { pasta: 400, milk: 500, maida: 40, butter: 50, cheese: 100, garlic: 20, capsicum: 150, mushroom: 1 } },
+  { name: "Instant noodles (Maggi)", aliases: ["maggi", "noodles", "instant noodles", "maggie"], tips: [],
+    ing: { noodles: 4, peas: 50, carrot: 50, onion: 50 } },
+  { name: "Tomato soup", aliases: ["tomato soup", "soup"], tips: [],
+    ing: { tomato: 600, garlic: 15, butter: 30, cream: 50, blackPepper: 3, sugar: 10 } },
+  { name: "Cucumber salad", aliases: ["salad", "kachumber", "cucumber salad"], tips: [],
+    ing: { cucumber: 300, tomato: 200, onion: 100, lemon: 2, blackPepper: 3, coriander: 0.5 } },
+];
+
+/* Cheaper alternatives for expensive items (keyed by ingredient key) */
+const ALTERNATIVES = {
+  paneer:   "Make paneer at home from 2L full-cream milk (~₹130 for 400g), or swap one paneer night for soya chunk curry.",
+  cream:    "Blend 10–12 soaked cashews with milk instead of buying cream — same richness.",
+  cashews:  "Peanuts or melon seeds make a nearly identical gravy base at a fraction of the price.",
+  cheese:   "Cheese is optional in most of these dishes — skip it or halve it.",
+  ghee:     "If there's already ghee at home, skip buying — oil works fine for tadka.",
+  butter:   "Cook mostly in oil and finish with just 1 tbsp butter for the flavour.",
+  basmati:  "Everyday sona masoori works fine for pulao and jeera rice — ~40% cheaper.",
+  chicken:  "A whole chicken cut up is ~30% cheaper per kg than boneless.",
+  fish:     "Local seasonal fish varieties curry just as well as premium ones.",
+  mushroom: "Soya chunks give a similar bite at a fraction of the price.",
+};
+
+const POPULAR = ["Dal tadka with rice", "Paneer butter masala with roti", "Aloo gobi", "Rajma chawal", "Chole (chana masala)", "Poha", "Veg pulao", "Tomato pasta", "Egg curry", "Masala dosa"];
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const LS_KEY = "glo_api_key";
+const LS_AI_CACHE = "glo_ai_cache";
+
+let people = 4;
+let selectedMeals = []; // { query, meal (resolved MEALS entry or ai object or null), count }
+let lastItems = [];     // computed items for the exclude-toggle recompute
+
+/* =====================================================================
+   MEAL MATCHING
+   ===================================================================== */
+function norm(s) { return s.toLowerCase().trim().replace(/\s+/g, " "); }
+
+function resolveMeal(query) {
+  const q = norm(query);
+  if (!q) return null;
+  // exact name/alias
+  for (const m of MEALS) {
+    if (norm(m.name) === q || m.aliases.some(a => norm(a) === q)) return m;
+  }
+  // substring either direction
+  for (const m of MEALS) {
+    const names = [m.name, ...m.aliases].map(norm);
+    if (names.some(n => n.includes(q) || q.includes(n))) return m;
+  }
+  // token overlap: ≥ half the query tokens appear in name+aliases
+  const qTokens = q.split(" ").filter(t => t.length > 2);
+  if (qTokens.length) {
+    let best = null, bestScore = 0;
+    for (const m of MEALS) {
+      const hay = [m.name, ...m.aliases].join(" ").toLowerCase();
+      const score = qTokens.filter(t => hay.includes(t)).length / qTokens.length;
+      if (score > bestScore) { bestScore = score; best = m; }
+    }
+    if (bestScore >= 0.5) return best;
+  }
+  return null;
+}
+
+/* =====================================================================
+   FORM UI
+   ===================================================================== */
+function stepPeople(d) {
+  people = Math.min(12, Math.max(1, people + d));
+  document.getElementById("people-val").textContent = people;
+}
+
+function addMeal(query) {
+  const q = norm(query);
+  if (!q) return;
+  if (selectedMeals.some(s => norm(s.query) === q || (s.meal && norm(s.meal.name) === q))) return; // no dupes
+  const meal = resolveMeal(q);
+  selectedMeals.push({ query, meal, count: 1 });
+  renderChips();
+}
+
+function addMealFromInput() {
+  const inp = document.getElementById("meal-input");
+  addMeal(inp.value);
+  inp.value = "";
+  inp.focus();
+}
+
+function removeMeal(i) { selectedMeals.splice(i, 1); renderChips(); }
+function cycleCount(i) { selectedMeals[i].count = selectedMeals[i].count % 4 + 1; renderChips(); }
+
+function renderChips() {
+  const box = document.getElementById("meal-chips");
+  box.innerHTML = "";
+  selectedMeals.forEach((s, i) => {
+    const chip = document.createElement("span");
+    chip.className = "chip" + (s.meal ? "" : " unknown");
+    const label = document.createElement("span");
+    label.textContent = s.meal ? s.meal.name : s.query + " (?)";
+    const count = document.createElement("span");
+    count.className = "count";
+    count.textContent = "×" + s.count;
+    count.title = "Times you'll cook this during the week — tap to change";
+    count.onclick = () => cycleCount(i);
+    const rm = document.createElement("button");
+    rm.className = "rm";
+    rm.setAttribute("aria-label", "Remove meal");
+    rm.textContent = "✕";
+    rm.onclick = () => removeMeal(i);
+    chip.append(label, count, rm);
+    box.appendChild(chip);
+  });
+}
+
+function startOver() {
+  selectedMeals = [];
+  renderChips();
+  document.getElementById("results").style.display = "none";
+  document.getElementById("form-notice").innerHTML = "";
+  document.getElementById("planner").scrollIntoView();
+}
+
+/* =====================================================================
+   AI FALLBACK (optional — direct browser call to the Anthropic API)
+   ===================================================================== */
+function getKey() { return localStorage.getItem(LS_KEY) || ""; }
+
+function saveKey() {
+  const v = document.getElementById("api-key-input").value.trim();
+  if (v) { localStorage.setItem(LS_KEY, v); }
+  renderKeyStatus();
+}
+function clearKey() {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById("api-key-input").value = "";
+  renderKeyStatus();
+}
+function renderKeyStatus() {
+  const el = document.getElementById("key-status");
+  if (getKey()) { el.className = "key-status on"; el.textContent = "✓ API key saved on this device — unknown dishes will be handled by Claude."; }
+  else { el.className = "key-status off"; el.textContent = "No key saved — only the built-in dishes are available."; }
+}
+
+function aiCache() { try { return JSON.parse(localStorage.getItem(LS_AI_CACHE)) || {}; } catch { return {}; } }
+function aiCacheSet(name, data) {
+  const c = aiCache(); c[name] = data;
+  try { localStorage.setItem(LS_AI_CACHE, JSON.stringify(c)); } catch {}
+}
+
+const AI_SCHEMA = {
+  type: "object",
+  properties: {
+    ingredients: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Ingredient name, e.g. 'Onions'" },
+          section: { type: "string", enum: ["veg", "dairy", "meat", "dry", "pkg"], description: "veg=vegetables & fruits, dairy=dairy & eggs, meat=meat & fish, dry=dry groceries & spices, pkg=packaged items" },
+          qtyPer4People: { type: "number", description: "Quantity needed to cook this dish once for 4 people, in the given unit" },
+          unit: { type: "string", enum: ["g", "ml", "pc"], description: "grams, millilitres, or pieces" },
+          estCostPerUnit: { type: "number", description: "Typical Indian retail price in ₹: per kg for g, per litre for ml, per piece for pc" }
+        },
+        required: ["name", "section", "qtyPer4People", "unit", "estCostPerUnit"],
+        additionalProperties: false
+      }
+    },
+    prepTips: { type: "array", items: { type: "string" }, description: "1-2 short Sunday meal-prep tips for this dish" }
+  },
+  required: ["ingredients", "prepTips"],
+  additionalProperties: false
+};
+
+async function aiResolveMeal(query) {
+  const cached = aiCache()[norm(query)];
+  if (cached) return cached;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": getKey(),
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-opus-4-8",
+      max_tokens: 2048,
+      system: "You are a grocery-planning assistant for home cooking in India. Given a dish name, list the grocery ingredients needed to cook it once for 4 people, with realistic quantities and typical Indian retail prices in rupees. Ignore water. Include staple carbs (rice/roti) only if they are part of the dish itself.",
+      messages: [{ role: "user", content: `Dish: ${query}` }],
+      output_config: { format: { type: "json_schema", schema: AI_SCHEMA } },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const msg = body?.error?.message || `HTTP ${res.status}`;
+    throw new Error(res.status === 401 ? "API key was rejected — check it in Settings." : msg);
+  }
+  const data = await res.json();
+  if (data.stop_reason === "refusal") throw new Error("Claude declined this request.");
+  const text = (data.content || []).find(b => b.type === "text")?.text;
+  if (!text) throw new Error("Empty response from the API.");
+  const parsed = JSON.parse(text);
+
+  const mealObj = {
+    name: query.replace(/\b\w/g, c => c.toUpperCase()),
+    ai: true,
+    ingredients: parsed.ingredients,
+    tips: parsed.prepTips || [],
+  };
+  aiCacheSet(norm(query), mealObj);
+  return mealObj;
+}
+
+/* =====================================================================
+   OPTIMISER
+   ===================================================================== */
+function fmtQty(qty, unit) {
+  if (unit === "g")  return qty >= 1000 ? (qty / 1000).toFixed(qty % 1000 ? 1 : 0) + " kg" : qty + " g";
+  if (unit === "ml") return qty >= 1000 ? (qty / 1000).toFixed(qty % 1000 ? 1 : 0) + " L"  : qty + " ml";
+  if (unit === "bunch") return qty + (qty > 1 ? " bunches" : " bunch");
+  if (unit === "pack")  return qty + (qty > 1 ? " packs" : " pack");
+  return qty + (qty > 1 ? " pcs" : " pc");
+}
+function fmtMoney(n) { return "₹" + Math.round(n).toLocaleString("en-IN"); }
+
+function itemCost(qty, unit, price) {
+  return (unit === "g" || unit === "ml") ? (qty / 1000) * price : qty * price;
+}
+
+async function optimise() {
+  const noticeBox = document.getElementById("form-notice");
+  noticeBox.innerHTML = "";
+  if (selectedMeals.length === 0) {
+    noticeBox.innerHTML = `<div class="notice err">Add at least one meal first — try the popular picks below the box.</div>`;
+    return;
+  }
+
+  const btn = document.getElementById("optimise-btn");
+  const notices = [];
+
+  // Resolve unknown meals with AI if a key exists
+  const unknowns = selectedMeals.filter(s => !s.meal && !s.aiMeal);
+  if (unknowns.length && getKey()) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spin"></span>Asking Claude about ${unknowns.length} dish${unknowns.length > 1 ? "es" : ""}…`;
+    const results = await Promise.allSettled(unknowns.map(s => aiResolveMeal(s.query)));
+    results.forEach((r, idx) => {
+      if (r.status === "fulfilled") unknowns[idx].aiMeal = r.value;
+      else notices.push(`Couldn't get ingredients for “${unknowns[idx].query}”: ${r.reason.message}`);
+    });
+    btn.disabled = false;
+    btn.textContent = "Optimise my groceries ✨";
+  } else if (unknowns.length) {
+    notices.push(`I don't know ${unknowns.map(s => `“${s.query}”`).join(", ")} — pick from the suggestions, or add an Anthropic API key in Settings so Claude can handle any dish. Everything else is included below.`);
+  }
+
+  // Accumulate ingredients across meals, scaled by people + repeat count
+  const factor = people / 4;
+  const acc = new Map(); // key -> { name, section, unit, price, qty, step, fromAI }
+
+  const addQty = (key, def, qty) => {
+    const cur = acc.get(key);
+    if (cur) cur.qty += qty;
+    else acc.set(key, { ...def, qty });
+  };
+
+  for (const s of selectedMeals) {
+    const mult = factor * s.count;
+    if (s.meal) {
+      for (const [key, baseQty] of Object.entries(s.meal.ing)) {
+        const d = ING[key];
+        addQty(key, { name: d.n, section: d.s, unit: d.u, price: d.p, step: d.step, fromAI: false }, baseQty * mult);
+      }
+    } else if (s.aiMeal) {
+      for (const ai of s.aiMeal.ingredients) {
+        // merge with a local ingredient when names line up (e.g. "onion" → Onions)
+        const aiName = norm(ai.name).replace(/s$/, "");
+        const localKey = Object.keys(ING).find(k => {
+          const ln = norm(ING[k].n).replace(/s$/, "");
+          return (ln.includes(aiName) || aiName.includes(ln)) && ING[k].u === (ai.unit === "pc" ? ING[k].u : ai.unit);
+        });
+        if (localKey) {
+          const d = ING[localKey];
+          addQty(localKey, { name: d.n, section: d.s, unit: d.u, price: d.p, step: d.step, fromAI: false }, ai.qtyPer4People * mult);
+        } else {
+          const step = ai.unit === "pc" ? 1 : (ai.qtyPer4People < 100 ? 50 : 100);
+          addQty("ai:" + aiName, { name: ai.name, section: ai.section, unit: ai.unit, price: ai.estCostPerUnit, step, fromAI: true }, ai.qtyPer4People * mult);
+        }
+      }
+    }
+  }
+
+  // Round to buyable amounts and price
+  const items = [];
+  for (const [key, it] of acc) {
+    const rounded = Math.ceil(it.qty / it.step) * it.step;
+    items.push({ key, ...it, qty: rounded, cost: itemCost(rounded, it.unit, it.price), excluded: false });
+  }
+  lastItems = items;
+
+  // Prep tips (deduped)
+  const tips = [...new Set(selectedMeals.flatMap(s => (s.meal ? s.meal.tips : s.aiMeal ? s.aiMeal.tips : [])))];
+
+  renderResults(items, tips, notices);
+}
+
+/* =====================================================================
+   RESULTS RENDERING
+   ===================================================================== */
+function currentTotal() {
+  return lastItems.filter(i => !i.excluded).reduce((sum, i) => sum + i.cost, 0);
+}
+
+function renderBudgetBanner() {
+  const box = document.getElementById("budget-banner");
+  const budget = parseFloat(document.getElementById("budget-input").value);
+  const total = currentTotal();
+  if (!budget || budget <= 0) {
+    box.innerHTML = `<div class="banner ok"><strong>${fmtMoney(total)}</strong>Estimated total for the week (no budget set)</div>`;
+    return;
+  }
+  if (total <= budget) {
+    box.innerHTML = `<div class="banner ok"><strong>${fmtMoney(total)} · under budget 🎉</strong>You have ${fmtMoney(budget - total)} of headroom out of your ${fmtMoney(budget)} budget.</div>`;
+  } else {
+    box.innerHTML = `<div class="banner over"><strong>${fmtMoney(total)} · over budget by ${fmtMoney(total - budget)}</strong>See the swaps on the right, or tap items you already have at home to remove them.</div>`;
+  }
+}
+
+function renderResults(items, tips, notices) {
+  const listCard = document.getElementById("list-card");
+  listCard.innerHTML = "<h2>🛒 Your grocery list</h2>" +
+    (notices.length ? notices.map(n => `<div class="notice">${n}</div>`).join("") : "") +
+    `<p class="exclude-hint" style="margin-top:10px">Tap any item you already have at home to knock it off the total.</p>`;
+
+  for (const sec of SECTION_ORDER) {
+    const secItems = items.filter(i => i.section === sec).sort((a, b) => b.cost - a.cost);
+    if (!secItems.length) continue;
+    const div = document.createElement("div");
+    div.className = "gsec";
+    const h = document.createElement("h3");
+    h.innerHTML = `<span>${SECTIONS[sec].icon} ${SECTIONS[sec].label}</span><span class="subtotal"></span>`;
+    div.appendChild(h);
+    const ul = document.createElement("ul");
+    for (const it of secItems) {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="iname">${it.name}${it.fromAI ? ' <span class="ai-tag">AI</span>' : ""}</span>` +
+        `<span class="iqty">${fmtQty(it.qty, it.unit)}</span><span class="icost">${fmtMoney(it.cost)}</span>`;
+      li.title = "Tap if you already have this at home";
+      li.onclick = () => {
+        it.excluded = !it.excluded;
+        li.classList.toggle("excluded", it.excluded);
+        updateTotals();
+      };
+      ul.appendChild(li);
+    }
+    div.appendChild(ul);
+    listCard.appendChild(div);
+  }
+
+  const totalRow = document.createElement("div");
+  totalRow.className = "total-row";
+  totalRow.innerHTML = `<span>Total</span><span id="grand-total"></span>`;
+  listCard.appendChild(totalRow);
+
+  renderFlags(items);
+
+  const tipsCard = document.getElementById("tips-card");
+  tipsCard.innerHTML = "<h3>🗓️ Sunday prep plan</h3>" +
+    (tips.length ? `<ul class="tips">${tips.map(t => `<li>${t}</li>`).join("")}</ul>`
+                 : `<p class="hint">No prep needed for these meals — they're all quick cooks.</p>`);
+
+  updateTotals();
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+}
+
+function updateTotals() {
+  // grand total + per-section subtotals + budget banner reflect exclusions
+  document.getElementById("grand-total").textContent = fmtMoney(currentTotal());
+  const secDivs = document.querySelectorAll("#list-card .gsec");
+  let di = 0;
+  for (const sec of SECTION_ORDER) {
+    const secItems = lastItems.filter(i => i.section === sec);
+    if (!secItems.length) continue;
+    const sub = secItems.filter(i => !i.excluded).reduce((s, i) => s + i.cost, 0);
+    secDivs[di].querySelector(".subtotal").textContent = fmtMoney(sub);
+    di++;
+  }
+  renderBudgetBanner();
+}
+
+function renderFlags(items) {
+  const card = document.getElementById("flags-card");
+  const total = items.reduce((s, i) => s + i.cost, 0);
+  const flagged = items
+    .filter(i => !i.fromAI && ALTERNATIVES[i.key] && (i.cost >= 150 || i.cost >= total * 0.08))
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, 3);
+  if (!flagged.length) { card.style.display = "none"; return; }
+  card.style.display = "block";
+  card.innerHTML = "<h3>💡 Where the money goes</h3>" + flagged.map(i =>
+    `<div class="flag"><strong>${i.name} — ${fmtMoney(i.cost)}</strong>${ALTERNATIVES[i.key]}</div>`
+  ).join("");
+}
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+(function init() {
+  // autocomplete list
+  const dl = document.getElementById("meal-list");
+  for (const m of MEALS) {
+    const o = document.createElement("option");
+    o.value = m.name;
+    dl.appendChild(o);
+  }
+  // popular suggestion chips
+  const sug = document.getElementById("suggest-chips");
+  for (const name of POPULAR) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = "+ " + name;
+    b.onclick = () => addMeal(name);
+    sug.appendChild(b);
+  }
+  // Enter adds meal
+  document.getElementById("meal-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); addMealFromInput(); }
+  });
+  renderKeyStatus();
+})();
+</script>
+</body>
+</html>
