@@ -21,6 +21,8 @@ Tell it how many people you're feeding, which meals you're cooking this week, an
 |---|---|
 | ![Home screen](screenshots/home.png) | ![Results screen](screenshots/results.png) |
 
+📄 Full walkthrough of the site as a PDF: [index.pdf](index.pdf)
+
 ## How to run
 
 No install, no server, no build step — download `index.html` and double-click it. Everything runs in the browser and works offline.
