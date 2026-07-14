@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data/AI Analyst — 90-Day Flight Plan</title>
+<style>
+  :root {
+    --bg: #f2f4ef;
+    --surface: #ffffff;
+    --surface-2: #e9ece4;
+    --ink: #1c231f;
+    --muted: #5b665f;
+    --border: #dde1d6;
+    --accent: #3b6e64;
+    --accent-ink: #ffffff;
+    --accent-2: #b5701f;
+    --good-bg: #e3efe4;
+    --good-ink: #2f6b47;
+    --build-bg: #f7e9d7;
+    --build-ink: #9a5b13;
+    --wip-bg: #e3ecec;
+    --wip-ink: #2f6663;
+    --shadow: 0 1px 2px rgba(28,35,31,.06), 0 8px 24px rgba(28,35,31,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121815;
+      --surface: #1b2320;
+      --surface-2: #232c27;
+      --ink: #e9ece5;
+      --muted: #9bab9f;
+      --border: #2d3630;
+      --accent: #74b7a5;
+      --accent-ink: #0f1a17;
+      --accent-2: #e0a552;
+      --good-bg: #22362a;
+      --good-ink: #8fd3a4;
+      --build-bg: #3a2c17;
+      --build-ink: #e7b978;
+      --wip-bg: #1e2f2e;
+      --wip-ink: #8fd0c9;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121815; --surface: #1b2320; --surface-2: #232c27; --ink: #e9ece5; --muted: #9bab9f;
+    --border: #2d3630; --accent: #74b7a5; --accent-ink: #0f1a17; --accent-2: #e0a552;
+    --good-bg: #22362a; --good-ink: #8fd3a4; --build-bg: #3a2c17; --build-ink: #e7b978;
+    --wip-bg: #1e2f2e; --wip-ink: #8fd0c9; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f4ef; --surface: #ffffff; --surface-2: #e9ece4; --ink: #1c231f; --muted: #5b665f;
+    --border: #dde1d6; --accent: #3b6e64; --accent-ink: #ffffff; --accent-2: #b5701f;
+    --good-bg: #e3efe4; --good-ink: #2f6b47; --build-bg: #f7e9d7; --build-ink: #9a5b13;
+    --wip-bg: #e3ecec; --wip-ink: #2f6663; --shadow: 0 1px 2px rgba(28,35,31,.06), 0 8px 24px rgba(28,35,31,.06);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 80px; }
+
+  .theme-toggle {
+    position: fixed; top: 18px; right: 18px; z-index: 30; width: 42px; height: 42px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer;
+  }
+  .theme-toggle:hover { background: var(--surface-2); }
+
+  header.top {
+    padding: 64px 0 40px; border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 14px; display: block;
+  }
+  header.top h1 { font-size: clamp(30px, 4.4vw, 44px); font-weight: 700; letter-spacing: -.01em; max-width: 15ch; }
+  header.top .dek { color: var(--muted); font-size: 16.5px; max-width: 62ch; margin-top: 14px; }
+
+  .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 32px; }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 16px; font-weight: 700; margin-top: 5px; }
+
+  section { margin-bottom: 56px; }
+  section > h2 { font-size: 23px; font-weight: 700; margin-bottom: 6px; }
+  section > .lede { color: var(--muted); font-size: 14.5px; margin-bottom: 24px; max-width: 62ch; }
+
+  /* skill table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table.skills { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 560px; }
+  table.skills th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  table.skills td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.skills tr:last-child td { border-bottom: none; }
+  table.skills td:first-child { font-family: ui-monospace, monospace; color: var(--muted); width: 40px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .pill.build { background: var(--build-bg); color: var(--build-ink); }
+  .pill.have { background: var(--good-bg); color: var(--good-ink); }
+  .pill.wip { background: var(--wip-bg); color: var(--wip-ink); }
+
+  /* 90 day plan */
+  .month { border-left: 3px solid var(--accent); padding-left: 22px; margin-bottom: 34px; position: relative; }
+  .month:last-child { margin-bottom: 0; }
+  .month-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .month-head .num { font-family: ui-monospace, monospace; color: var(--accent); font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+  .month-head h3 { font-size: 18.5px; font-weight: 700; }
+  .weeks { display: flex; flex-direction: column; gap: 14px; }
+  .week { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .week .wk { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .week .theme { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .week .res { font-size: 14px; color: var(--muted); }
+  .week .res b { color: var(--ink); font-weight: 600; }
+  .capstone { margin-top: 12px; background: var(--wip-bg); color: var(--wip-ink); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; font-weight: 600; }
+
+  /* projects */
+  .projects { display: flex; flex-direction: column; gap: 18px; }
+  .project { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; box-shadow: var(--shadow); }
+  .project-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .project-num { font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent-ink); background: var(--accent); width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex: none; }
+  .project h3 { font-size: 17.5px; font-weight: 700; }
+  .project .desc { font-size: 14.5px; margin-bottom: 12px; }
+  .project .tools { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .project .tools span { font-family: ui-monospace, monospace; background: var(--surface-2); border-radius: 5px; padding: 2px 7px; margin-right: 6px; display: inline-block; margin-bottom: 4px; }
+  .resume-line { border-left: 3px solid var(--accent-2); padding: 10px 14px; font-size: 13.5px; font-style: italic; color: var(--ink); background: var(--surface-2); border-radius: 0 8px 8px 0; }
+  .resume-line::before { content: "Resume line — "; font-style: normal; font-weight: 700; color: var(--accent-2); }
+
+  /* timeline */
+  .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tl-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 20px; position: relative; }
+  .tl-item .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-bottom: 12px; }
+  .tl-item .when { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; margin-bottom: 6px; }
+  .tl-item p { font-size: 14px; }
+  @media (max-width: 720px) { .timeline { grid-template-columns: 1fr; } .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+
+  .honest { margin-top: 22px; background: var(--build-bg); color: var(--build-ink); border-radius: 12px; padding: 18px 20px; font-size: 14.5px; }
+  .honest b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+
+  footer { color: var(--muted); font-size: 13px; padding-top: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" onclick="toggleTheme()">🌙</button>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">Career switch flight plan</span>
+  <h1>Operations → Data/AI Analyst, in 90 days</h1>
+  <p class="dek">A week-by-week route from where you are to a portfolio and resume that can credibly compete for Data/AI Analyst roles — built around the hours and budget you actually have, not an idealized version of them.</p>
+  <div class="stat-strip">
+    <div class="stat"><div class="k">Current role</div><div class="v">Ops / Support, 1–3 yrs</div></div>
+    <div class="stat"><div class="k">Target role</div><div class="v">Data / AI Analyst</div></div>
+    <div class="stat"><div class="k">Runway</div><div class="v">12–20 hrs / week</div></div>
+    <div class="stat"><div class="k">Budget</div><div class="v">Free resources only</div></div>
+  </div>
+</header>
+
+<section id="gaps">
+  <h2>1. Skill gap analysis</h2>
+  <p class="lede">Ranked by how often it actually gates an interview, not by how interesting it is to learn.</p>
+  <div class="table-scroll">
+  <table class="skills">
+    <tr><th>#</th><th>Skill</th><th>Status</th></tr>
+    <tr><td>1</td><td>SQL — joins, aggregations, window functions, subqueries</td><td><span class="pill build">Build</span></td></tr>
+    <tr><td>2</td><td>Python + pandas — cleaning, transforming, analyzing data</td><td><span class="pill build">Build</span></td></tr>
+    <tr><td>3</td><td>Data visualization / BI tool (Power BI Desktop)</td><td><span class="pill build">Build</span></td></tr>
+    <tr><td>4</td><td>Statistics fundamentals — distributions, correlation, hypothesis testing</td><td><span class="pill build">Build</span></td></tr>
+    <tr><td>5</td><td>LLM-assisted analysis / prompt engineering for data tasks</td><td><span class="pill wip">Already building</span></td></tr>
+    <tr><td>6</td><td>Git / version control</td><td><span class="pill have">Have</span></td></tr>
+    <tr><td>7</td><td>Stakeholder communication, requirements gathering</td><td><span class="pill have">Have</span></td></tr>
+    <tr><td>8</td><td>Excel / Sheets — pivot tables, formulas</td><td><span class="pill have">Likely have</span></td></tr>
+    <tr><td>9</td><td>Basic ML concepts — regression, classification, what a model does</td><td><span class="pill build">Build (light)</span></td></tr>
+    <tr><td>10</td><td>Data storytelling — findings into a recommendation</td><td><span class="pill wip">Partial</span></td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="plan">
+  <h2>2. The 90 days</h2>
+  <p class="lede">Twelve weeks, roughly 15 hrs/week. Each month ends with a shipped project — that's deliberate, not a stretch goal.</p>
+
+  <div class="month">
+    <div class="month-head"><span class="num">MONTH 01</span><h3>Foundations — SQL, stats, Python</h3></div>
+    <div class="weeks">
+      <div class="week">
+        <div class="wk">Weeks 1–2</div>
+        <div class="theme">SQL foundations</div>
+        <div class="res"><b>SQLBolt</b> (free, interactive) → <b>Mode Analytics SQL Tutorial</b> (free) → daily reps on <b>HackerRank SQL</b> / <b>StrataScratch</b> free tier. 45–60 min/day.</div>
+      </div>
+      <div class="week">
+        <div class="wk">Weeks 3–4</div>
+        <div class="theme">Statistics intuition + Python basics</div>
+        <div class="res"><b>StatQuest</b> (YouTube) for intuition, <b>Khan Academy Statistics &amp; Probability</b> for structure, <b>Kaggle Learn: Python</b> micro-course for hands-on reps.</div>
+        <div class="capstone">📦 Capstone: Project 1 — Ops/support ticket analysis (see §3)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="month">
+    <div class="month-head"><span class="num">MONTH 02</span><h3>Depth — pandas, visualization</h3></div>
+    <div class="weeks">
+      <div class="week">
+        <div class="wk">Weeks 5–6</div>
+        <div class="theme">Pandas deep dive</div>
+        <div class="res"><b>Kaggle Learn: Pandas</b> + <b>Data Cleaning</b> micro-courses; <b>Corey Schafer's pandas playlist</b> (YouTube) as a standing reference.</div>
+      </div>
+      <div class="week">
+        <div class="wk">Weeks 7–8</div>
+        <div class="theme">Visualization / Power BI</div>
+        <div class="res"><b>Microsoft Learn: Data Analytics with Power BI</b> (free path); <b>Guy in a Cube</b> (YouTube) for the practical technique the docs skip.</div>
+        <div class="capstone">📦 Capstone: Project 2 — Retail sales dashboard (see §3)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="month">
+    <div class="month-head"><span class="num">MONTH 03</span><h3>Differentiation — AI crossover, resume, applying</h3></div>
+    <div class="weeks">
+      <div class="week">
+        <div class="wk">Weeks 9–10</div>
+        <div class="theme">AI-analyst crossover + resume v1</div>
+        <div class="res"><b>DeepLearning.AI: Prompt Engineering for Developers</b> (free) to formalize what you already do; build Project 3; draft resume + LinkedIn with STAR-method stories from your ops role.</div>
+      </div>
+      <div class="week">
+        <div class="wk">Weeks 11–12</div>
+        <div class="theme">Interview prep + start applying</div>
+        <div class="res">SQL scenario drills (<b>StrataScratch</b> / <b>LeetCode</b> free tier), 2–3 self-recorded mock case interviews. Start applying from <b>week 10</b> — don't wait for week 12 to feel "ready."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <h2>3. Portfolio projects</h2>
+  <p class="lede">Three projects, each proving a different claim: domain fluency, technical range, and the AI-analyst edge almost no other applicant will have.</p>
+  <div class="projects">
+    <div class="project">
+      <div class="project-head"><span class="project-num">1</span><h3>Ops/support ticket analysis</h3></div>
+      <p class="desc">Analyze a support-ticket dataset (Kaggle's "Customer Support Ticket Dataset," or data shaped like what you already see at work) in SQL to find SLA-breach patterns and resolution-time bottlenecks.</p>
+      <p class="tools"><span>SQL</span><span>Excel</span></p>
+      <p class="resume-line">"Analyzed N months of support ticket data (SQL) to identify SLA-breach patterns; recommended a change projected to cut average resolution time by X%."</p>
+    </div>
+    <div class="project">
+      <div class="project-head"><span class="project-num">2</span><h3>Retail sales dashboard</h3></div>
+      <p class="desc">Clean a public retail dataset (Kaggle "Online Retail" or "Superstore") in pandas, then build an interactive Power BI dashboard with a short written case study alongside it.</p>
+      <p class="tools"><span>Python</span><span>pandas</span><span>Power BI</span></p>
+      <p class="resume-line">"Built an end-to-end sales analysis pipeline (Python/pandas, Power BI) surfacing seasonal demand and high-return categories; proposed changes to reduce returns by X%."</p>
+    </div>
+    <div class="project">
+      <div class="project-head"><span class="project-num">3</span><h3>"Chat with your data" AI assistant</h3></div>
+      <p class="desc">A small app — same stack as your grocery-list and trip-planner projects — that lets someone ask plain-English questions about a CSV and get pandas-generated answers and charts back, via the Claude API.</p>
+      <p class="tools"><span>Claude API</span><span>Python</span><span>pandas</span></p>
+      <p class="resume-line">"Built an LLM-powered data assistant (Claude API + Python/pandas) answering natural-language questions over a dataset — applied experience in the AI+analytics overlap now showing up in analyst job descriptions."</p>
+    </div>
+  </div>
+</section>
+
+<section id="timeline">
+  <h2>4. Timeline &amp; milestones</h2>
+  <div class="timeline">
+    <div class="tl-item"><div class="dot"></div><div class="when">End of month 1 · week 4</div><p>Comfortable with SQL joins/aggregations and core stats vocabulary. Project 1 shipped.</p></div>
+    <div class="tl-item"><div class="dot"></div><div class="when">End of month 2 · week 8</div><p>Comfortable cleaning messy real-world data in pandas. One BI tool under your belt. Project 2 shipped. Resume draft exists.</p></div>
+    <div class="tl-item"><div class="dot"></div><div class="when">End of month 3 · week 12</div><p>Project 3 shipped. All three projects on GitHub with a portfolio README. Resume/LinkedIn finalized. Applications in flight since week 10.</p></div>
+  </div>
+  <div class="honest">
+    <b>Honest read</b>
+    90 days gets you portfolio- and interview-ready — it does not guarantee an offer. Budget another 4–8 weeks of active interviewing on top. Realistic total timeline from today to an offer: <strong>4–6 months</strong>, not 90 days.
+  </div>
+</section>
+
+<footer>Built for the switch from Ops/Support to Data/AI Analyst · revisit this weekly, not daily</footer>
+
+</div>
+
+<script>
+  const LS_THEME = "roadmap_theme";
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    document.getElementById("theme-toggle").textContent = t === "dark" ? "☀️" : "🌙";
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    localStorage.setItem(LS_THEME, next);
+    applyTheme(next);
+  }
+  (function () {
+    const saved = localStorage.getItem(LS_THEME);
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(saved || (prefersDark ? "dark" : "light"));
+  })();
+</script>
+</body>
+</html>
