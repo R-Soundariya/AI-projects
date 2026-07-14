@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Return Radar — E-commerce Returns Root-Cause Analysis</title>
+<style>
+  :root {
+    --page-bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #eceef1;
+    --ink: #1a1d24;
+    --muted: #5c6272;
+    --border: #dde0e6;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --shadow: 0 1px 2px rgba(20,24,32,.05), 0 8px 24px rgba(20,24,32,.06);
+
+    /* categorical — fixed order, one hue per reason category, identity never rank */
+    --cat-wrongsize:   #2a78d6;
+    --cat-notdesc:     #1baf7a;
+    --cat-quality:     #d99000;
+    --cat-wrongitem:   #008300;
+    --cat-missing:     #4a3aa7;
+    --cat-damage:      #e34948;
+    --cat-changedmind: #c65a8a;
+
+    /* status — fixed, never themed */
+    --status-critical: #d03b3b;
+    --status-serious:  #ec835a;
+    --status-warning:  #c98a10;
+    --status-lower:    #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #12151a;
+      --surface: #1b1f26;
+      --surface-2: #232833;
+      --ink: #e7e9ee;
+      --muted: #9aa0b0;
+      --border: #2c313d;
+      --accent: #6ea6e0;
+      --accent-ink: #0d1620;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.4);
+      --cat-wrongsize:   #6ea6e0;
+      --cat-notdesc:     #4bc79a;
+      --cat-quality:     #e0aa3f;
+      --cat-wrongitem:   #4ea24e;
+      --cat-missing:     #a596e6;
+      --cat-damage:      #e6807f;
+      --cat-changedmind: #dd8fb3;
+      --status-critical: #e88a8a;
+      --status-serious:  #f0a884;
+      --status-warning:  #e0b355;
+      --status-lower:    #6bc76b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page-bg: #12151a; --surface: #1b1f26; --surface-2: #232833; --ink: #e7e9ee; --muted: #9aa0b0;
+    --border: #2c313d; --accent: #6ea6e0; --accent-ink: #0d1620; --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.4);
+    --cat-wrongsize: #6ea6e0; --cat-notdesc: #4bc79a; --cat-quality: #e0aa3f; --cat-wrongitem: #4ea24e;
+    --cat-missing: #a596e6; --cat-damage: #e6807f; --cat-changedmind: #dd8fb3;
+    --status-critical: #e88a8a; --status-serious: #f0a884; --status-warning: #e0b355; --status-lower: #6bc76b;
+  }
+  :root[data-theme="light"] {
+    --page-bg: #f4f5f7; --surface: #ffffff; --surface-2: #eceef1; --ink: #1a1d24; --muted: #5c6272;
+    --border: #dde0e6; --accent: #2a78d6; --accent-ink: #ffffff; --shadow: 0 1px 2px rgba(20,24,32,.05), 0 8px 24px rgba(20,24,32,.06);
+    --cat-wrongsize: #2a78d6; --cat-notdesc: #1baf7a; --cat-quality: #d99000; --cat-wrongitem: #008300;
+    --cat-missing: #4a3aa7; --cat-damage: #e34948; --cat-changedmind: #c65a8a;
+    --status-critical: #d03b3b; --status-serious: #ec835a; --status-warning: #c98a10; --status-lower: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  h1, h2, h3 { margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  p { margin: 0; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+
+  .theme-toggle {
+    position: fixed; top: 18px; right: 18px; z-index: 30; width: 42px; height: 42px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer;
+  }
+  .theme-toggle:hover { background: var(--surface-2); }
+
+  header.top { padding: 56px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 44px; }
+  .eyebrow { font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 12px; display: block; }
+  header.top h1 { font-size: clamp(28px, 4.2vw, 38px); font-weight: 800; max-width: 20ch; }
+  header.top .dek { color: var(--muted); font-size: 16px; max-width: 66ch; margin-top: 14px; }
+
+  .stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 28px; }
+  .stat { background: var(--surface); padding: 14px 16px; }
+  .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 18px; font-weight: 800; margin-top: 4px; }
+  @media (max-width: 640px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+
+  section { margin-bottom: 52px; }
+  section > h2 { font-size: 21px; font-weight: 800; margin-bottom: 6px; }
+  section > .lede { color: var(--muted); font-size: 14.5px; margin-bottom: 22px; max-width: 66ch; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; box-shadow: var(--shadow); }
+
+  /* method note */
+  .method { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; font-size: 13.5px; color: var(--muted); }
+  .method b { color: var(--ink); }
+  .method a { color: var(--accent); }
+
+  /* bar chart */
+  .barchart { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 168px 1fr 92px; align-items: center; gap: 12px; }
+  .bar-row .label { font-size: 13.5px; font-weight: 600; }
+  .bar-track { position: relative; height: 22px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
+  .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+  .bar-row .figure { font-size: 13px; color: var(--muted); text-align: right; }
+  .bar-row .figure b { color: var(--ink); font-weight: 700; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; font-size: 12.5px; color: var(--muted); }
+  .legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+
+  /* price band component */
+  .band-list { display: flex; flex-direction: column; gap: 12px; }
+  .band-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: baseline; padding: 14px 16px; background: var(--surface-2); border-radius: 10px; }
+  .band-row .name { font-weight: 700; font-size: 14px; }
+  .band-row .count { font-size: 13px; color: var(--muted); }
+  .band-row .chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .band-row .note { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .chip { display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+
+  /* month chart */
+  .monthchart { display: flex; align-items: flex-end; gap: 10px; height: 140px; padding-top: 10px; }
+  .month-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+  .month-bar { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: var(--accent); position: relative; }
+  .month-bar.peak { background: var(--status-critical); }
+  .month-col .n { font-size: 12px; font-weight: 700; }
+  .month-col .m { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .month-note { margin-top: 16px; }
+
+  /* root cause table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table.rootcause { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+  table.rootcause th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  table.rootcause td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.rootcause tr:last-child td { border-bottom: none; }
+  .cat-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: 1px; }
+  .rc-tag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); white-space: nowrap; }
+
+  /* recommendations */
+  .recs { display: flex; flex-direction: column; gap: 14px; }
+  .rec { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .rec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .rec-rank { font-size: 13px; font-weight: 800; color: var(--muted); }
+  .rec-title { font-size: 15.5px; font-weight: 700; }
+  .priority { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1.5px solid currentColor; }
+  .priority .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .priority.critical { color: var(--status-critical); }
+  .priority.serious { color: var(--status-serious); }
+  .priority.warning { color: var(--status-warning); }
+  .priority.lower { color: var(--status-lower); }
+  .rec .impact { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .rec .fix { font-size: 14px; }
+  .rec .fix b { font-weight: 700; }
+
+  footer { color: var(--muted); font-size: 13px; padding-top: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" onclick="toggleTheme()">🌙</button>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">Returns root-cause analysis</span>
+  <h1>Return Radar — why customers are actually sending things back</h1>
+  <p class="dek">A categorization and root-cause analysis of 40 e-commerce return reasons across five Indian marketplaces — built to answer one question: which single fix would stop the most returns?</p>
+  <div class="stat-strip">
+    <div class="stat"><div class="k">Returns analyzed</div><div class="v num">40</div></div>
+    <div class="stat"><div class="k">Time span</div><div class="v">Jun – Jan</div></div>
+    <div class="stat"><div class="k">Platforms</div><div class="v num">5</div></div>
+    <div class="stat"><div class="k">Product categories</div><div class="v num">5</div></div>
+  </div>
+</header>
+
+<section id="method">
+  <div class="method">
+    <b>A note on the data.</b> I can't log into or scrape Amazon, Flipkart, or Twitter live, so this 40-row dataset is representative, not scraped — built from patterns documented in industry reporting (India's fashion e-commerce return rate runs 25–40%; size confusion alone causes an estimated 40–60% of fashion returns on Meesho) plus real, publicly reported complaint patterns about wrong items and damaged deliveries on Meesho and Ajio. Sources are in the <a href="README.md">README</a>. Treat the specific numbers below as illustrative of a real pattern, not a live business's actual figures.
+  </div>
+</section>
+
+<section id="categorization">
+  <h2>1. Categorization</h2>
+  <p class="lede">All 40 return reasons sorted into seven categories. Wrong Size/Fit is the single largest bucket — one in five returns, before you even get to the runner-up reasons.</p>
+  <div class="panel">
+    <div class="barchart" id="cat-chart">
+      <div class="bar-row"><div class="label">Wrong Size / Fit</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--cat-wrongsize)"></div></div><div class="figure num"><b>8</b> · 20.0%</div></div>
+      <div class="bar-row"><div class="label">Not as Described</div><div class="bar-track"><div class="bar-fill" style="width:87.5%;background:var(--cat-notdesc)"></div></div><div class="figure num"><b>7</b> · 17.5%</div></div>
+      <div class="bar-row"><div class="label">Quality Issue</div><div class="bar-track"><div class="bar-fill" style="width:87.5%;background:var(--cat-quality)"></div></div><div class="figure num"><b>7</b> · 17.5%</div></div>
+      <div class="bar-row"><div class="label">Missing Parts</div><div class="bar-track"><div class="bar-fill" style="width:62.5%;background:var(--cat-missing)"></div></div><div class="figure num"><b>5</b> · 12.5%</div></div>
+      <div class="bar-row"><div class="label">Delivery Damage</div><div class="bar-track"><div class="bar-fill" style="width:62.5%;background:var(--cat-damage)"></div></div><div class="figure num"><b>5</b> · 12.5%</div></div>
+      <div class="bar-row"><div class="label">Wrong Item Sent</div><div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--cat-wrongitem)"></div></div><div class="figure num"><b>4</b> · 10.0%</div></div>
+      <div class="bar-row"><div class="label">Changed Mind</div><div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--cat-changedmind)"></div></div><div class="figure num"><b>4</b> · 10.0%</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="patterns">
+  <h2>2. Pattern analysis</h2>
+  <p class="lede">Which product types return the most, whether price changes the reason, and whether returns cluster around a time of year.</p>
+
+  <h3 style="font-size:15px;margin-bottom:12px">Returns by product type</h3>
+  <div class="panel" style="margin-bottom:20px">
+    <div class="barchart">
+      <div class="bar-row"><div class="label">Fashion / Apparel</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent)"></div></div><div class="figure num"><b>18</b> · 45.0%</div></div>
+      <div class="bar-row"><div class="label">Footwear</div><div class="bar-track"><div class="bar-fill" style="width:33%;background:var(--accent)"></div></div><div class="figure num"><b>6</b> · 15.0%</div></div>
+      <div class="bar-row"><div class="label">Electronics</div><div class="bar-track"><div class="bar-fill" style="width:33%;background:var(--accent)"></div></div><div class="figure num"><b>6</b> · 15.0%</div></div>
+      <div class="bar-row"><div class="label">Beauty</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--accent)"></div></div><div class="figure num"><b>5</b> · 12.5%</div></div>
+      <div class="bar-row"><div class="label">Home Goods</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--accent)"></div></div><div class="figure num"><b>5</b> · 12.5%</div></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);margin-top:16px"><b style="color:var(--ink)">Fashion drives almost half of all returns (45%)</b> — and a third of those (6 of 18) are Wrong Size/Fit specifically, more than double any other reason within the category. Footwear shows the same pattern in miniature: 2 of its 6 returns are sizing.</p>
+  </div>
+
+  <h3 style="font-size:15px;margin-bottom:12px">Does price change the reason?</h3>
+  <div class="panel" style="margin-bottom:20px">
+    <div class="band-list">
+      <div class="band-row">
+        <div class="name">Budget · under ₹600</div><div class="count num">12 returns</div>
+        <div class="chips">
+          <span class="chip"><span class="dot" style="background:var(--cat-wrongsize)"></span>Wrong Size × 4</span>
+          <span class="chip"><span class="dot" style="background:var(--cat-wrongitem)"></span>Wrong Item × 2</span>
+          <span class="chip"><span class="dot" style="background:var(--cat-changedmind)"></span>Changed Mind × 2</span>
+        </div>
+        <div class="note">Cheapest tier skews toward sizing mistakes and fulfillment slip-ups — consistent with thin-margin marketplace sellers who skip size charts and pack in a hurry.</div>
+      </div>
+      <div class="band-row">
+        <div class="name">Premium · ₹1,500–2,999</div><div class="count num">9 returns</div>
+        <div class="chips">
+          <span class="chip"><span class="dot" style="background:var(--cat-notdesc)"></span>Not as Described × 3</span>
+          <span class="chip"><span class="dot" style="background:var(--cat-quality)"></span>Quality Issue × 3</span>
+        </div>
+        <div class="note">Higher price raises the bar: two-thirds of this tier's returns are about the item not matching expectations set by the listing, or not holding up physically.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;margin-bottom:12px">Is there a seasonal pattern?</h3>
+  <div class="panel">
+    <div class="monthchart">
+      <div class="month-col"><div class="n num">1</div><div class="month-bar" style="height:14%"></div><div class="m">Jun</div></div>
+      <div class="month-col"><div class="n num">5</div><div class="month-bar" style="height:71%"></div><div class="m">Jul</div></div>
+      <div class="month-col"><div class="n num">6</div><div class="month-bar peak" style="height:86%"></div><div class="m">Aug</div></div>
+      <div class="month-col"><div class="n num">6</div><div class="month-bar peak" style="height:86%"></div><div class="m">Sep</div></div>
+      <div class="month-col"><div class="n num">7</div><div class="month-bar peak" style="height:100%"></div><div class="m">Oct</div></div>
+      <div class="month-col"><div class="n num">7</div><div class="month-bar peak" style="height:100%"></div><div class="m">Nov</div></div>
+      <div class="month-col"><div class="n num">4</div><div class="month-bar" style="height:57%"></div><div class="m">Dec</div></div>
+      <div class="month-col"><div class="n num">1</div><div class="month-bar" style="height:14%"></div><div class="m">Jan (prior batch)</div></div>
+    </div>
+    <p class="month-note" style="font-size:13.5px;color:var(--muted)"><b style="color:var(--ink)">65% of all returns (26 of 40) land in the Aug–Nov window</b> — the run-up to and through India's festive sale season. It's not evenly the whole mix, either: 5 of the 9 Delivery Damage / Wrong Item returns (the two logistics-driven categories) happen in November alone, pointing at fulfillment strain during peak volume rather than a product problem.</p>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--cat-wrongsize)"></span>Wrong Size/Fit</span>
+    <span><span class="dot" style="background:var(--cat-notdesc)"></span>Not as Described</span>
+    <span><span class="dot" style="background:var(--cat-quality)"></span>Quality Issue</span>
+    <span><span class="dot" style="background:var(--cat-missing)"></span>Missing Parts</span>
+    <span><span class="dot" style="background:var(--cat-damage)"></span>Delivery Damage</span>
+    <span><span class="dot" style="background:var(--cat-wrongitem)"></span>Wrong Item Sent</span>
+    <span><span class="dot" style="background:var(--cat-changedmind)"></span>Changed Mind</span>
+  </div>
+</section>
+
+<section id="rootcause">
+  <h2>3. Root cause</h2>
+  <p class="lede">Every category traced back to where it actually starts — product, listing, packaging, or logistics — because the fix is different for each.</p>
+  <div class="table-scroll">
+  <table class="rootcause">
+    <tr><th>Category</th><th>Root cause</th><th>Why</th></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-wrongsize)"></span>Wrong Size/Fit</td><td><span class="rc-tag">Listing</span></td><td>Missing or inconsistent size charts — measurements, not just S/M/L, and normalized per brand.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-notdesc)"></span>Not as Described</td><td><span class="rc-tag">Listing</span></td><td>Photography and copy overstate or misrepresent color, print, or fabric texture.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-quality)"></span>Quality Issue</td><td><span class="rc-tag">Product</span></td><td>Genuine manufacturing/durability defects — not a description problem, a QC problem.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-missing)"></span>Missing Parts</td><td><span class="rc-tag">Packaging</span></td><td>Incomplete kitting at pack-out — a component listed in the set never made it into the box.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-damage)"></span>Delivery Damage</td><td><span class="rc-tag">Packaging + Logistics</span></td><td>Inadequate protective packaging combined with rough handling in transit.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-wrongitem)"></span>Wrong Item Sent</td><td><span class="rc-tag">Logistics</span></td><td>A picking error at the warehouse, not a description or product problem.</td></tr>
+    <tr><td><span class="cat-dot" style="background:var(--cat-changedmind)"></span>Changed Mind</td><td><span class="rc-tag">Listing / Marketing</span></td><td>Expectation-setting at the point of sale, not an operational defect — the hardest to eliminate.</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="recommendations">
+  <h2>4. Recommendations, ranked by return-volume impact</h2>
+  <p class="lede">One fix per root cause, ordered by how many of the 40 returns that root cause actually accounts for.</p>
+  <div class="recs">
+    <div class="rec">
+      <div class="rec-head"><span class="rec-rank">#1</span><span class="rec-title">Standardize size charts (measurements, not S/M/L)</span><span class="priority critical"><span class="dot"></span>Critical</span></div>
+      <div class="impact">Targets Wrong Size/Fit — <b class="num">8 returns, 20%</b>, the single largest category</div>
+      <div class="fix">Require a body-measurement size chart (in cm) on every listing before it can publish, normalized across brands so "M" means the same thing twice. Flag any seller whose size-related return rate crosses a threshold for a mandatory size-chart audit.</div>
+    </div>
+    <div class="rec">
+      <div class="rec-head"><span class="rec-rank">#2</span><span class="rec-title">Fix the listing pipeline: photos, color, fabric detail</span><span class="priority serious"><span class="dot"></span>Serious</span></div>
+      <div class="impact">Targets Not as Described — <b class="num">7 returns, 17.5%</b></div>
+      <div class="fix">Require multi-angle, color-calibrated photography plus a fabric/texture close-up for apparel listings, and add a "true to color" reviewer check before a listing goes live.</div>
+    </div>
+    <div class="rec">
+      <div class="rec-head"><span class="rec-rank">#3</span><span class="rec-title">Tighten incoming quality control</span><span class="priority serious"><span class="dot"></span>Serious</span></div>
+      <div class="impact">Targets Quality Issue — <b class="num">7 returns, 17.5%</b></div>
+      <div class="fix">Set a per-seller defect-rate threshold, tracked from return reasons, that auto-flags a listing for QC review before it accumulates more quality-driven returns.</div>
+    </div>
+    <div class="rec">
+      <div class="rec-head"><span class="rec-rank">#4</span><span class="rec-title">Scan-verify pack-out and upgrade protective packaging</span><span class="priority warning"><span class="dot"></span>Warning</span></div>
+      <div class="impact">Targets Missing Parts + Delivery Damage — <b class="num">10 returns, 25%</b> combined, concentrated in the Aug–Nov peak window</div>
+      <div class="fix">Scan every listed component against the order at pack-out instead of a manual checklist, and upgrade void-fill/corner protection for fragile or multi-part items — prioritized ahead of the festive-season volume spike, not after it.</div>
+    </div>
+    <div class="rec">
+      <div class="rec-head"><span class="rec-rank">#5</span><span class="rec-title">Barcode scan-to-confirm at picking; sharper checkout expectation-setting</span><span class="priority lower"><span class="dot"></span>Lower priority</span></div>
+      <div class="impact">Targets Wrong Item Sent + Changed Mind — <b class="num">8 returns, 20%</b> combined</div>
+      <div class="fix">Add a barcode/QR scan-to-confirm step at picking to catch wrong-item errors before dispatch. Changed Mind is the one category where the "fix" is a trade-off, not a defect: easy/free returns are also a deliberate conversion lever, so treat this as a lower and different kind of priority than the rest.</div>
+    </div>
+  </div>
+</section>
+
+<footer>Return Radar · a representative dataset built from cited industry patterns, analyzed end to end · see README for sources and methodology</footer>
+
+</div>
+
+<script>
+  const LS_THEME = "returnradar_theme";
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    document.getElementById("theme-toggle").textContent = t === "dark" ? "☀️" : "🌙";
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    localStorage.setItem(LS_THEME, next);
+    applyTheme(next);
+  }
+  (function () {
+    const saved = localStorage.getItem(LS_THEME);
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(saved || (prefersDark ? "dark" : "light"));
+  })();
+</script>
+</body>
+</html>
