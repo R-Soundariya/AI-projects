@@ -43,7 +43,7 @@ No `OPENAI_API_KEY` was available in the environment this was built in, so the r
 ## How to run
 
 ```
-cd "Customer Feedback Analyzer"
+cd customer-feedback-analyzer
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env   # add your OPENAI_API_KEY
@@ -66,7 +66,7 @@ pytest
 This can't be hosted as a static page like the other projects in this repo — it needs a Python process and an API key at runtime. To put a live link on it:
 
 1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
-2. "New app" → pick this repo (`R-Soundariya/AI-projects`) → set the branch to `main` and the main file path to `Customer Feedback Analyzer/app.py`.
+2. "New app" → pick this repo (`R-Soundariya/AI-projects`) → set the branch to `main` and the main file path to `customer-feedback-analyzer/app.py`.
 3. Under **Advanced settings → Secrets**, add:
    ```
    OPENAI_API_KEY = "sk-..."
