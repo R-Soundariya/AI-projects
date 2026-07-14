@@ -55,8 +55,11 @@ Check "Analyze the sample feedback instead of uploading" to try it without a CSV
 Run the tests (no API key needed — everything is mocked):
 
 ```
+pip install -r requirements-dev.txt
 pytest
 ```
+
+`requirements.txt` is kept to only what the app needs at runtime (Streamlit Cloud installs exactly this file); `requirements-dev.txt` adds `pytest` on top for local development.
 
 ## Deploying a hosted demo (Streamlit Community Cloud, free)
 
