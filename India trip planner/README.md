@@ -14,12 +14,13 @@ Pick a destination, trip length, travel style (budget / mid-range / luxury), and
 - 🚕 **Transport between locations with costs** — plus a rough getting-there estimate from your starting city
 - 💰 **Budget breakdown** per day and for the full trip, checked against your budget with style-downgrade suggestions
 - 📅 **Best time to visit and what to avoid** — seasons, scams, and crowd traps, stated plainly
+- 🌗 **Light / dark mode** — toggle in the top-right corner; remembers your choice and defaults to your system preference
 
 ## Screenshots
 
-| Plan your trip | Your itinerary |
-|---|---|
-| ![Home screen](screenshots/home.png) | ![Itinerary screen](screenshots/itinerary.png) |
+| Plan your trip | Your itinerary | Dark mode |
+|---|---|---|
+| ![Home screen](screenshots/home.png) | ![Itinerary screen](screenshots/itinerary.png) | ![Dark mode](screenshots/dark.png) |
 
 📄 Full walkthrough of the site as a PDF: [index.pdf](index.pdf)
 
@@ -37,3 +38,4 @@ Six destinations ship with deep, hand-curated itineraries: **Jaipur, Goa, Varana
 - Fuzzy destination matching with aliases ("pondy" → Pondicherry, "banaras" → Varanasi)
 - Per-style cost model (budget/mid/luxury tiers per city) with live budget-fit checking
 - Claude API (`claude-opus-4-8`) with JSON-schema structured outputs for the AI fallback
+- Theme-aware CSS custom properties for instant light/dark switching, persisted in `localStorage`
